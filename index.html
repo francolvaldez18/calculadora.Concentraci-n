@@ -284,6 +284,53 @@ textarea:focus {
   margin-bottom: 12px;
 }
 
+.task-workspace {
+  display: grid;
+  gap: 14px;
+}
+
+.task-card {
+  display: grid;
+  gap: 12px;
+}
+
+.task-choice-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.task-choice-grid.task-mode-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.task-choice-grid.input-mode-grid {
+  grid-template-columns: minmax(0, 2fr) minmax(240px, 1fr);
+  align-items: start;
+}
+
+.task-choice-grid .choice-buttons {
+  margin-bottom: 0;
+}
+
+.task-mode-grid #calculation-mode-selector {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.input-mode-grid #input-mode-selector {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.task-choice-grid .choice-button {
+  min-height: 92px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-size: 1.1rem;
+}
+
 .choice-button {
   background: rgba(255, 255, 255, 0.9);
   color: var(--text-primary);
@@ -502,6 +549,16 @@ textarea:focus {
   .tabs {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .task-choice-grid.task-mode-grid,
+  .task-choice-grid.input-mode-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .task-mode-grid #calculation-mode-selector,
+  .input-mode-grid #input-mode-selector {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 640px) {
@@ -576,37 +633,36 @@ textarea:focus {
         </section>
 
         <section class="screen" data-screen="1">
-          <div class="grid grid-3">
-            <article class="card">
+          <div class="task-workspace">
+            <article class="card task-card">
               <h2 data-i18n="taskTitle">Tarea</h2>
-              <div class="choice-buttons" id="calculation-mode-selector">
-                <button type="button" class="choice-button is-active" data-mode="single" data-i18n="modeSingle">Único</button>
-                <button type="button" class="choice-button" data-mode="multiple" data-i18n="modeMultiple">Múltiple</button>
-                <button type="button" class="choice-button" data-mode="ibc">IBC</button>
+              <div class="task-choice-grid task-mode-grid">
+                <div class="choice-buttons" id="calculation-mode-selector">
+                  <button type="button" class="choice-button is-active" data-mode="single" data-i18n="modeSingle">Único</button>
+                  <button type="button" class="choice-button" data-mode="multiple" data-i18n="modeMultiple">Múltiple</button>
+                  <button type="button" class="choice-button" data-mode="ibc">IBC</button>
+                </div>
               </div>
               <div class="notice" data-i18n="taskHelp">
                 Primero definí la tarea a evaluar. La selección del parámetro se hace recién en la pestaña Estado.
               </div>
             </article>
 
-            <article class="card">
+            <article class="card task-card">
               <h2 data-i18n="dataLoadModeTitle">Modo de carga</h2>
-              <div class="choice-buttons" id="input-mode-selector">
-                <button type="button" class="choice-button is-active" data-input-mode="manual" data-i18n="inputManual">Manual</button>
-                <button type="button" class="choice-button" data-input-mode="automatic" data-i18n="inputAutomatic">Automático</button>
+              <div class="task-choice-grid input-mode-grid">
+                <div class="choice-buttons" id="input-mode-selector">
+                  <button type="button" class="choice-button is-active" data-input-mode="manual" data-i18n="inputManual">Manual</button>
+                  <button type="button" class="choice-button" data-input-mode="automatic" data-i18n="inputAutomatic">Automático</button>
+                </div>
+                <label class="field">
+                  <span data-i18n="operationMode">Modo global</span>
+                  <select id="settings-operation-mode-inline">
+                    <option value="real">Real</option>
+                    <option value="theoretical">Teórico</option>
+                  </select>
+                </label>
               </div>
-              <label class="field">
-                <span data-i18n="operationMode">Modo global</span>
-                <select id="settings-operation-mode-inline">
-                  <option value="real">Real</option>
-                  <option value="theoretical">Teórico</option>
-                </select>
-              </label>
-            </article>
-
-            <article class="card">
-              <h2 data-i18n="quickSummary">Resumen rápido</h2>
-              <div class="metric-chips" id="summary-chips"></div>
             </article>
           </div>
         </section>
@@ -638,11 +694,6 @@ textarea:focus {
               Orden obligatorio: Ba, Al, P, Fe, Ni, Cu, Zn, Pb, Cr, Mn, Co, Li (opcional), B, Cd.
             </div>
             <div class="cards" id="auto-preview"></div>
-            </article>
-
-            <article class="card">
-              <h2 data-i18n="quickSummary">Resumen rápido</h2>
-              <div class="metric-chips" id="status-summary-chips"></div>
             </article>
           </div>
 
@@ -916,8 +967,6 @@ const elements = {
   singleParameterField: document.getElementById('single-parameter-field'),
   singleSelect: document.getElementById('single-parameter-select'),
   settingsOperationModeInline: document.getElementById('settings-operation-mode-inline'),
-  summaryChips: document.getElementById('summary-chips'),
-  statusSummaryChips: document.getElementById('status-summary-chips'),
   autoInputPanel: document.getElementById('auto-input-panel'),
   autoInputText: document.getElementById('auto-input-text'),
   autoPreview: document.getElementById('auto-preview'),
@@ -1118,7 +1167,7 @@ function render() {
   renderScreenState();
   renderModeButtons();
   populateSingleSelect();
-  renderSummary();
+  renderReadouts();
   renderAutoPanel();
   renderTaskSpecificLabels();
   renderInputs();
@@ -1207,23 +1256,7 @@ function populateSingleSelect() {
   elements.singleSelect.value = state.selectedParameter;
 }
 
-function renderSummary() {
-  const visibleCount = getVisibleContaminants().length;
-  const modeLabel = state.calculationMode === 'single' ? 'Único' : state.calculationMode === 'multiple' ? 'Múltiple' : 'IBC';
-  const inputLabel = state.inputMode === 'manual' ? 'Manual' : 'Automático';
-  const incomingVolume = getIncomingVolume();
-
-  const chips = [
-    metricChip('Modo', modeLabel),
-    metricChip('Carga', inputLabel),
-    metricChip('Factor', `${formatNumber(state.settings.safetyFactor)}x`),
-    metricChip('Parámetros', String(visibleCount)),
-    metricChip('V ingreso', `${formatNumber(incomingVolume)} m³`),
-  ].join('');
-
-  elements.summaryChips.innerHTML = chips;
-  elements.statusSummaryChips.innerHTML = chips;
-
+function renderReadouts() {
   elements.factorReadout.textContent =
     state.settings.operationMode === 'real'
       ? `Modo real · la concentración de ingreso se corrige con FS (${formatNumber(state.settings.safetyFactor)}).`
