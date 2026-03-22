@@ -340,11 +340,18 @@ textarea:focus {
 .task-mode-grid #calculation-mode-selector {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: 100%;
 }
 
 .input-mode-grid #input-mode-selector {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  width: 100%;
+}
+
+#calculation-mode-selector .choice-button,
+#input-mode-selector .choice-button {
+  width: 100%;
 }
 
 .task-choice-grid .choice-button {
@@ -717,7 +724,7 @@ textarea:focus {
 
         <section class="screen" data-screen="1">
           <div class="task-workspace">
-            <article class="card task-card" id="input-mode-card">
+            <article class="card task-card" id="task-mode-card">
               <h2 data-i18n="taskTitle">Tarea</h2>
               <div class="task-choice-grid task-mode-grid">
                 <div class="choice-buttons" id="calculation-mode-selector">
@@ -729,20 +736,16 @@ textarea:focus {
               <div class="error hidden" id="task-mode-error"></div>
             </article>
 
-            <article class="card task-card">
+            <article class="card task-card" id="input-mode-card">
               <h2 data-i18n="dataLoadModeTitle">Modo de carga</h2>
               <div class="task-choice-grid input-mode-grid">
-                <div class="choice-buttons" id="input-mode-selector">
-                  <button type="button" class="choice-button" data-input-mode="manual" data-i18n="inputManual">Manual</button>
-                  <button type="button" class="choice-button" data-input-mode="automatic" data-i18n="inputAutomatic">Automático</button>
+                <div class="choice-buttons" id="input-mode-selector-wrap">
+                  <div class="choice-buttons" id="input-mode-selector">
+                    <button type="button" class="choice-button" data-input-mode="manual" data-i18n="inputManual">Manual</button>
+                    <button type="button" class="choice-button" data-input-mode="automatic" data-i18n="inputAutomatic">Automático</button>
+                  </div>
                 </div>
-                <label class="field">
-                  <span data-i18n="operationMode">Modo global</span>
-                  <select id="settings-operation-mode-inline">
-                    <option value="real">Real</option>
-                    <option value="theoretical">Teórico</option>
-                  </select>
-                </label>
+                <div class="notice hidden" id="single-mode-notice">Modo único: carga manual.</div>
               </div>
               <div class="error hidden" id="input-mode-error"></div>
             </article>
@@ -1066,11 +1069,12 @@ const elements = {
   calcShared: document.getElementById('calcShared'),
   inputModeCard: document.getElementById('input-mode-card'),
   inputModeSelector: document.getElementById('input-mode-selector'),
+  inputModeSelectorWrap: document.getElementById('input-mode-selector-wrap'),
+  singleModeNotice: document.getElementById('single-mode-notice'),
   taskModeError: document.getElementById('task-mode-error'),
   inputModeError: document.getElementById('input-mode-error'),
   singleParameterField: document.getElementById('single-parameter-field'),
   singleSelect: document.getElementById('single-parameter-select'),
-  settingsOperationModeInline: document.getElementById('settings-operation-mode-inline'),
   autoInputPanel: document.getElementById('auto-input-panel'),
   autoInputText: document.getElementById('auto-input-text'),
   autoPreview: document.getElementById('auto-preview'),
@@ -1192,12 +1196,6 @@ function bindEvents() {
 
   elements.singleSelect.addEventListener('change', (event) => {
     state.selectedParameter = event.target.value;
-    render();
-  });
-
-  elements.settingsOperationModeInline.addEventListener('change', (event) => {
-    state.settings.operationMode = event.target.value;
-    saveSettings();
     render();
   });
 
@@ -1337,7 +1335,8 @@ function renderModeButtons() {
   }
   toggleActiveButton(elements.calcModeSelector, 'mode', state.calculationMode);
   toggleActiveButton(elements.inputModeSelector, 'inputMode', state.inputMode);
-  elements.inputModeCard.classList.toggle('hidden', state.calculationMode === 'single');
+  elements.inputModeSelectorWrap.classList.toggle('hidden', state.calculationMode === 'single');
+  elements.singleModeNotice.classList.toggle('hidden', state.calculationMode !== 'single');
   elements.singleParameterField.classList.toggle('hidden', state.calculationMode !== 'single');
   elements.incomingVolume.disabled = state.calculationMode === 'ibc';
   if (state.calculationMode === 'ibc') elements.incomingVolume.value = '1';
@@ -1537,7 +1536,6 @@ function bindConcentrationInputs(container, type) {
 function renderSettings() {
   elements.settingsSafetyFactor.value = String(state.settings.safetyFactor);
   elements.settingsOperationMode.value = state.settings.operationMode;
-  elements.settingsOperationModeInline.value = state.settings.operationMode;
   elements.settingsWarningThreshold.value = String(state.settings.warningThresholdRatio);
   elements.settingsOrderReadout.textContent = `Orden automático: ${getAutomaticOrder().join(', ')}`;
   elements.settingsOrderList.innerHTML = state.settings.contaminantOrder.map((key) => metricChip(key, 'Visible', 'info')).join('');
