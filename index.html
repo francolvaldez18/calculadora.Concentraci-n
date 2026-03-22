@@ -578,16 +578,15 @@ textarea:focus {
         <section class="screen" data-screen="1">
           <div class="grid grid-3">
             <article class="card">
-              <h2 data-i18n="calcModeTitle">Modo de cálculo</h2>
+              <h2 data-i18n="taskTitle">Tarea</h2>
               <div class="choice-buttons" id="calculation-mode-selector">
                 <button type="button" class="choice-button is-active" data-mode="single" data-i18n="modeSingle">Único</button>
                 <button type="button" class="choice-button" data-mode="multiple" data-i18n="modeMultiple">Múltiple</button>
                 <button type="button" class="choice-button" data-mode="ibc">IBC</button>
               </div>
-              <label class="field" id="single-parameter-field">
-                <span data-i18n="selectedParameter">Parámetro seleccionado</span>
-                <select id="single-parameter-select"></select>
-              </label>
+              <div class="notice" data-i18n="taskHelp">
+                Primero definí la tarea a evaluar. La selección del parámetro se hace recién en la pestaña Estado.
+              </div>
             </article>
 
             <article class="card">
@@ -610,8 +609,22 @@ textarea:focus {
               <div class="metric-chips" id="summary-chips"></div>
             </article>
           </div>
+        </section>
 
-          <div class="card auto-panel hidden" id="auto-input-panel">
+        <section class="screen" data-screen="2">
+          <div class="grid grid-3">
+            <article class="card">
+              <h2 data-i18n="statusTitle">Estado</h2>
+              <label class="field" id="single-parameter-field">
+                <span data-i18n="selectedParameter">Parámetro seleccionado</span>
+                <select id="single-parameter-select"></select>
+              </label>
+              <div class="notice" data-i18n="statusHelp">
+                Cargá el estado inicial de la pileta y la caracterización del ingreso según la tarea seleccionada.
+              </div>
+            </article>
+
+            <article class="card auto-panel hidden" id="auto-input-panel">
             <h2 data-i18n="autoLoadTitle">Carga automática</h2>
             <label class="field">
               <span data-i18n="pasteLine">Pegar línea de datos</span>
@@ -625,7 +638,14 @@ textarea:focus {
               Orden obligatorio: Ba, Al, P, Fe, Ni, Cu, Zn, Pb, Cr, Mn, Co, Li (opcional), B, Cd.
             </div>
             <div class="cards" id="auto-preview"></div>
+            </article>
+
+            <article class="card">
+              <h2 data-i18n="quickSummary">Resumen rápido</h2>
+              <div class="metric-chips" id="status-summary-chips"></div>
+            </article>
           </div>
+
           <div class="grid grid-3">
             <article class="card">
               <h2 data-i18n="stageInitial">Etapa 1 · Estado inicial</h2>
@@ -639,7 +659,7 @@ textarea:focus {
             </article>
 
             <article class="card">
-              <h2 data-i18n="stageAddition">Etapa 2 · Ingreso</h2>
+              <h2 id="incoming-stage-title" data-i18n="stageAddition">Etapa 2 · Ingreso</h2>
               <label class="field">
                 <span data-i18n="incomingVolume">Volumen de ingreso V₁ (m³)</span>
                 <input id="incoming-volume" type="number" min="0" step="0.01" value="10" />
@@ -664,18 +684,13 @@ textarea:focus {
             </article>
 
             <article class="card">
-              <h2 data-i18n="incomingConcentrationsTitle">Concentraciones de ingreso</h2>
+              <h2 id="incoming-concentrations-title" data-i18n="incomingConcentrationsTitle">Concentraciones de ingreso</h2>
               <div id="incoming-concentrations" class="grid"></div>
-            </article>
-
-            <article class="card">
-              <h2 data-i18n="coolingCompositionTitle">Composición cooling water</h2>
-              <div id="cooling-preview" class="cards"></div>
             </article>
           </div>
         </section>
 
-        <section class="screen" data-screen="2">
+        <section class="screen" data-screen="3">
           <div class="cards">
             <article class="card">
               <h2 data-i18n="resultsTitle">Evaluación operativa</h2>
@@ -687,9 +702,9 @@ textarea:focus {
           <div class="cards" id="results-cards"></div>
         </section>
 
-        <section class="screen" data-screen="3">
+        <section class="screen" data-screen="4">
           <div class="card">
-            <h2 data-i18n="settingsTitle">Settings</h2>
+            <h2 data-i18n="settingsTitle">Ajustes</h2>
             <div class="grid grid-3">
               <label class="field">
                 <span data-i18n="safetyFactor">Factor de seguridad</span>
@@ -798,10 +813,14 @@ const EXCEL_SOURCE_STATUS = {
 
 const TEXTS = {
   es: {
-    tabs: ['Idioma', 'Cálculo', 'Resultados', 'Settings'],
+    tabs: ['Idioma', 'Tarea', 'Estado', 'Resultados', 'Ajustes'],
     welcomeTitle: 'Concentration Calculator - WWT - Utilities',
     welcomeDescription: 'Herramienta para el cálculo y evaluación de concentración de contaminantes en el sistema WWB.',
     selectLanguageText: 'Seleccionar idioma',
+    taskTitle: 'Tarea',
+    taskHelp: 'Primero definí la tarea a evaluar. La selección del parámetro se hace recién en la pestaña Estado.',
+    statusTitle: 'Estado',
+    statusHelp: 'Cargá el estado inicial de la pileta y la caracterización del ingreso según la tarea seleccionada.',
     langEnglish: 'English',
     langSpanish: 'Español',
     langKorean: '한국어',
@@ -816,10 +835,14 @@ const TEXTS = {
     devButton: 'Developer',
   },
   en: {
-    tabs: ['Language', 'Calculation', 'Results', 'Settings'],
+    tabs: ['Language', 'Task', 'State', 'Results', 'Settings'],
     welcomeTitle: 'Concentration Calculator - WWT - Utilities',
     welcomeDescription: 'Tool for calculating and evaluating contaminant concentration in the WWB system.',
     selectLanguageText: 'Select language',
+    taskTitle: 'Task',
+    taskHelp: 'First define the task to evaluate. Parameter selection is done later in the State tab.',
+    statusTitle: 'State',
+    statusHelp: 'Load the current pond state and the incoming stream characterization according to the selected task.',
     langEnglish: 'English',
     langSpanish: 'Spanish',
     langKorean: 'Korean',
@@ -834,10 +857,14 @@ const TEXTS = {
     devButton: 'Developer',
   },
   ko: {
-    tabs: ['언어', '계산', '결과', '설정'],
+    tabs: ['언어', '작업', '상태', '결과', '설정'],
     welcomeTitle: 'Concentration Calculator - WWT - Utilities',
     welcomeDescription: 'WWB 시스템의 오염물질 농도 계산 및 평가 도구',
     selectLanguageText: '언어 선택',
+    taskTitle: '작업',
+    taskHelp: '먼저 평가할 작업을 정합니다. 파라미터 선택은 상태 탭에서 진행합니다.',
+    statusTitle: '상태',
+    statusHelp: '선택한 작업에 따라 현재 수조 상태와 유입 특성을 입력하세요.',
     langEnglish: '영어',
     langSpanish: '스페인어',
     langKorean: '한국어',
@@ -890,17 +917,19 @@ const elements = {
   singleSelect: document.getElementById('single-parameter-select'),
   settingsOperationModeInline: document.getElementById('settings-operation-mode-inline'),
   summaryChips: document.getElementById('summary-chips'),
+  statusSummaryChips: document.getElementById('status-summary-chips'),
   autoInputPanel: document.getElementById('auto-input-panel'),
   autoInputText: document.getElementById('auto-input-text'),
   autoPreview: document.getElementById('auto-preview'),
   initialVolume: document.getElementById('initial-volume'),
   incomingVolume: document.getElementById('incoming-volume'),
   coolingVolume: document.getElementById('cooling-volume'),
+  incomingStageTitle: document.getElementById('incoming-stage-title'),
+  incomingConcentrationsTitle: document.getElementById('incoming-concentrations-title'),
   factorReadout: document.getElementById('factor-readout'),
   coolingModeReadout: document.getElementById('cooling-mode-readout'),
   initialContainer: document.getElementById('initial-concentrations'),
   incomingContainer: document.getElementById('incoming-concentrations'),
-  coolingPreview: document.getElementById('cooling-preview'),
   validationMessages: document.getElementById('validation-messages'),
   headlineMetrics: document.getElementById('headline-metrics'),
   resultsCards: document.getElementById('results-cards'),
@@ -1091,8 +1120,8 @@ function render() {
   populateSingleSelect();
   renderSummary();
   renderAutoPanel();
+  renderTaskSpecificLabels();
   renderInputs();
-  renderCoolingPreview();
   renderSettings();
   renderResults();
 }
@@ -1184,13 +1213,16 @@ function renderSummary() {
   const inputLabel = state.inputMode === 'manual' ? 'Manual' : 'Automático';
   const incomingVolume = getIncomingVolume();
 
-  elements.summaryChips.innerHTML = [
+  const chips = [
     metricChip('Modo', modeLabel),
     metricChip('Carga', inputLabel),
     metricChip('Factor', `${formatNumber(state.settings.safetyFactor)}x`),
     metricChip('Parámetros', String(visibleCount)),
     metricChip('V ingreso', `${formatNumber(incomingVolume)} m³`),
   ].join('');
+
+  elements.summaryChips.innerHTML = chips;
+  elements.statusSummaryChips.innerHTML = chips;
 
   elements.factorReadout.textContent =
     state.settings.operationMode === 'real'
@@ -1221,6 +1253,14 @@ function renderAutoPanel() {
         `<div class="card"><strong>${key}</strong><div class="readonly-output">${formatNumber(value)} mg/L</div></div>`,
     )
     .join('');
+}
+
+function renderTaskSpecificLabels() {
+  const isIbc = state.calculationMode === 'ibc';
+  elements.incomingStageTitle.textContent = isIbc ? 'Etapa 2 · IBC' : 'Etapa 2 · Ingreso';
+  elements.incomingConcentrationsTitle.textContent = isIbc
+    ? 'Caracterización del IBC'
+    : 'Caracterización del efluente';
 }
 
 function parseAutomaticLine(rawInput, fullOrder) {
@@ -1302,19 +1342,6 @@ function bindConcentrationInputs(container, type) {
       renderResults();
     });
   });
-}
-
-function renderCoolingPreview() {
-  elements.coolingPreview.innerHTML = getVisibleContaminants()
-    .map(
-      (item) => `
-        <div class="card">
-          <strong>${item.label}</strong>
-          <div class="readonly-output">${formatNumber(state.settings.coolingComposition[item.key] || 0)} mg/L</div>
-        </div>
-      `,
-    )
-    .join('');
 }
 
 function renderSettings() {
