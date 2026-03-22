@@ -158,22 +158,25 @@ button {
 
 .grid {
   display: grid;
-  gap: 12px;
+  gap: 16px;
 }
 
 .grid-3 {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  width: 100%;
 }
 
 .state-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   align-items: start;
+  width: 100%;
 }
 
 .cards {
   display: grid;
-  gap: 12px;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  width: 100%;
 }
 
 .card {
@@ -320,7 +323,8 @@ textarea:focus {
 
 .task-workspace {
   display: grid;
-  gap: 12px;
+  gap: 16px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   width: 100%;
 }
 
@@ -335,7 +339,14 @@ textarea:focus {
 
 .task-choice-grid {
   display: grid;
-  gap: 12px;
+  gap: 16px;
+}
+
+.grid-3 > :last-child:nth-child(odd),
+.cards > :last-child:nth-child(odd),
+.task-workspace > :last-child:nth-child(odd),
+.result-grid > :last-child:nth-child(odd) {
+  grid-column: 1 / -1;
 }
 
 .task-choice-grid.task-mode-grid {
@@ -597,11 +608,11 @@ textarea:focus {
 }
 
 .dev-dialog {
-  width: min(520px, 100%);
+  width: min(1040px, 100%);
   background: rgba(255, 255, 255, 0.96);
   border: 1px solid var(--border);
   border-radius: 12px;
-  padding: 12px;
+  padding: 16px;
   box-shadow: var(--shadow);
 }
 
@@ -628,8 +639,8 @@ textarea:focus {
 
 .result-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
 }
 
 .result-grid .readonly-output {
@@ -664,10 +675,21 @@ textarea:focus {
   color: #0b5cab;
 }
 
+#incoming-concentrations,
+#settings-limits-grid,
+#settings-cooling-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 @media (max-width: 980px) {
+  .cards,
+  .task-workspace,
   .state-grid,
   .grid-3,
-  .result-grid {
+  .result-grid,
+  #incoming-concentrations,
+  #settings-limits-grid,
+  #settings-cooling-grid {
     grid-template-columns: 1fr;
   }
 
