@@ -142,6 +142,11 @@ button {
   border-color: transparent;
 }
 
+.tab:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 .screen {
   display: none;
   gap: 12px;
@@ -302,7 +307,8 @@ textarea:focus {
 
 .choice-buttons {
   display: flex;
-  gap: 8px;
+  gap: 12px;
+  width: 100%;
 }
 
 .task-workspace {
@@ -355,17 +361,19 @@ textarea:focus {
 }
 
 .task-choice-grid .choice-button {
-  height: 36px;
+  height: 42px;
   padding: 0 12px;
   border-radius: 8px;
   text-align: center;
-  font-size: 13px;
+  font-size: 15px;
 }
 
 .choice-button {
-  height: 36px;
+  flex: 1;
+  width: 100%;
+  height: 42px;
   padding: 0 12px;
-  font-size: 13px;
+  font-size: 15px;
   border-radius: 8px;
   border: 1px solid rgba(73,119,153,.35);
   background: #fff;
@@ -1084,9 +1092,11 @@ const defaultSettings = {
 
 const state = {
   activeScreen: 0,
+  languageConfirmed: false,
   calculationMode: null,
   inputMode: null,
   selectedParameter: 'Ba',
+  tankLevelMmInput: '',
   tankLevelMm: 0,
   initialVolume: 100,
   incomingVolume: 10,
@@ -1236,7 +1246,10 @@ function bindEvents() {
     });
   });
 
-  elements.welcomeNextButton.addEventListener('click', () => setActiveScreen(1));
+  elements.welcomeNextButton.addEventListener('click', () => {
+    state.languageConfirmed = true;
+    setActiveScreen(1);
+  });
 
   elements.calcModeSelector.addEventListener('click', (event) => {
     const button = event.target.closest('[data-mode]');
@@ -1265,7 +1278,7 @@ function bindEvents() {
   });
 
   elements.tankLevelMm.addEventListener('input', (event) => {
-    state.tankLevelMm = Number(event.target.value);
+    state.tankLevelMmInput = event.target.value;
     renderStateBlock();
     renderResults();
   });
@@ -1391,11 +1404,18 @@ function render() {
 }
 
 function renderTabs() {
+  const maxUnlockedScreen = getMaxUnlockedScreen();
   elements.tabs.innerHTML = TEXTS[state.settings.locale].tabs
-    .map((label, index) => `<button type="button" class="tab ${index === state.activeScreen ? 'is-active' : ''}" data-tab-index="${index}">${label}</button>`)
+    .map((label, index) => {
+      const disabled = index > maxUnlockedScreen ? 'disabled' : '';
+      return `<button type="button" class="tab ${index === state.activeScreen ? 'is-active' : ''}" data-tab-index="${index}" ${disabled}>${label}</button>`;
+    })
     .join('');
   elements.tabs.querySelectorAll('.tab').forEach((tab) => {
-    tab.addEventListener('click', () => setActiveScreen(Number(tab.dataset.tabIndex)));
+    tab.addEventListener('click', () => {
+      if (tab.disabled) return;
+      setActiveScreen(Number(tab.dataset.tabIndex));
+    });
   });
 }
 
@@ -1417,9 +1437,45 @@ function renderI18n() {
 }
 
 function setActiveScreen(index) {
+  if (index > getMaxUnlockedScreen()) return;
   state.activeScreen = index;
   renderScreenState();
   renderTabs();
+}
+
+function getMaxUnlockedScreen() {
+  let maxUnlocked = state.languageConfirmed ? 1 : 0;
+  if (isTaskStepComplete()) maxUnlocked = Math.max(maxUnlocked, 2);
+  if (isStateStepComplete()) maxUnlocked = Math.max(maxUnlocked, 3);
+  if (isEffluentStepComplete()) maxUnlocked = Math.max(maxUnlocked, 4);
+  if (isPurgesStepComplete()) maxUnlocked = Math.max(maxUnlocked, 5);
+  return maxUnlocked;
+}
+
+function isTaskStepComplete() {
+  return Boolean(state.calculationMode && (state.calculationMode === 'single' || state.inputMode));
+}
+
+function isStateStepComplete() {
+  return Boolean(
+    state.tankLevelMmInput !== '' &&
+      Number.isFinite(state.tankLevelMm) &&
+      state.tankLevelMm >= 0 &&
+      state.selectedParameter &&
+      (state.initialConcentrations[state.selectedParameter] ?? null) !== null,
+  );
+}
+
+function isEffluentStepComplete() {
+  return state.calculationMode === 'single'
+    ? state.incomingVolume >= 0
+    : state.inputMode === 'automatic'
+      ? Boolean(state.autoInput.trim())
+      : state.incomingVolume >= 0;
+}
+
+function isPurgesStepComplete() {
+  return true;
 }
 
 function renderScreenState() {
@@ -1524,18 +1580,21 @@ function populateInitialContaminantSelect() {
 }
 
 function renderStateBlock() {
-  const isValidLevel = Number.isFinite(state.tankLevelMm) && state.tankLevelMm >= 0;
-  const estimatedVolume = isValidLevel ? state.tankLevelMm * (10 / 166.66) : 0;
+  const rawMm = state.tankLevelMmInput;
+  const mm = Number.parseFloat(rawMm);
+  const isValidLevel = rawMm !== '' && !Number.isNaN(mm) && mm >= 0;
+  const estimatedVolume = isValidLevel ? mm * (10 / 166.66) : 0;
+  state.tankLevelMm = isValidLevel ? mm : 0;
   state.initialVolume = estimatedVolume;
 
-  elements.tankLevelMm.value = state.tankLevelMm || '';
-  elements.estimatedVolume.textContent = formatNumber(estimatedVolume);
+  elements.tankLevelMm.value = rawMm;
+  elements.estimatedVolume.textContent = isValidLevel ? estimatedVolume.toFixed(2) : '';
   elements.initialContaminant.value = state.selectedParameter || '';
   elements.initialConcentration.value = state.selectedParameter
     ? String(state.initialConcentrations[state.selectedParameter] || 0)
     : '';
 
-  showBlockError(elements.levelError, isValidLevel ? '' : 'Completa los datos antes de continuar.');
+  showBlockError(elements.levelError, rawMm === '' || isValidLevel ? '' : 'Completa los datos antes de continuar.');
   showBlockError(
     elements.concentrationError,
     !state.selectedParameter ? 'Completa los datos antes de continuar.' : '',
