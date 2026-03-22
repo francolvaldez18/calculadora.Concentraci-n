@@ -418,6 +418,7 @@ textarea:focus {
 }
 
 .compact-output {
+  width: 50%;
   min-height: auto;
   padding: 8px 12px;
   border-radius: 8px;
@@ -431,6 +432,18 @@ textarea:focus {
 
 .field-note {
   margin-top: 0;
+}
+
+.purges-stack {
+  grid-template-columns: 1fr;
+}
+
+.purge-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  color: var(--text-primary);
 }
 
 .choice-button.active {
@@ -846,7 +859,7 @@ textarea:focus {
 
             <div class="field">
               <label>Volumen estimado (m³)<span class="inline-note">Referencia: 10 m³ = 166.66 mm</span></label>
-              <button id="estimatedVolume" class="readonly-output compact-output" type="button" disabled>0.000</button>
+              <button id="estimatedVolume" class="readonly-output compact-output" type="button" disabled>-- m³</button>
             </div>
 
             <div class="field">
@@ -871,13 +884,13 @@ textarea:focus {
             <div class="grid state-grid">
               <div class="field">
                 <label>Volumen de efluente (m³)</label>
-                <input id="incoming-volume" type="number" min="0" step="0.01" placeholder="m3" />
+                <input id="incoming-volume" type="number" min="0" step="0.01" placeholder="m³" />
                 <div id="incomingVolumeError" class="error hidden"></div>
               </div>
 
               <div class="field">
                 <label>Altura equivalente (mm)</label>
-                <button id="incoming-height-mm" class="readonly-output compact-output" type="button" disabled>0.000</button>
+                <button id="incoming-height-mm" class="readonly-output compact-output" type="button" disabled>-- mm</button>
               </div>
 
               <div class="field">
@@ -913,29 +926,21 @@ textarea:focus {
         </section>
 
         <section class="screen" data-screen="4">
-          <div class="grid grid-3">
+          <div class="grid purges-stack">
             <article class="card">
-              <h2>Cooling Water</h2>
+              <label class="purge-toggle"><input id="purgeCoolingEnabled" type="checkbox" checked /> Cooling Water</label>
               <label class="field">
                 <span>Volumen (m³)</span>
-                <input id="purgeCoolingVolume" type="number" min="0" step="0.01" value="0" />
-              </label>
-              <label class="field">
-                <span>Disponible</span>
-                <input id="purgeCoolingEnabled" type="checkbox" />
+                <input id="purgeCoolingVolume" type="number" min="0" step="0.01" value="10" />
               </label>
               <div class="readonly-output" id="purgeCoolingInfo"></div>
             </article>
 
             <article class="card">
-              <h2>RO Concentrate</h2>
+              <label class="purge-toggle"><input id="purgeRoEnabled" type="checkbox" /> RO Concentrate</label>
               <label class="field">
                 <span>Volumen (m³)</span>
                 <input id="purgeRoVolume" type="number" min="0" step="0.01" value="0" />
-              </label>
-              <label class="field">
-                <span>Disponible</span>
-                <input id="purgeRoEnabled" type="checkbox" />
               </label>
               <div class="readonly-output" id="purgeRoInfo"></div>
             </article>
@@ -1757,7 +1762,7 @@ function renderStateBlock() {
   state.initialVolume = estimatedVolume;
 
   elements.tankLevelMm.value = rawMm;
-  elements.estimatedVolume.textContent = isValidLevel ? estimatedVolume.toFixed(2) : '';
+  elements.estimatedVolume.textContent = isValidLevel ? `${estimatedVolume.toFixed(2)} m³` : '-- m³';
   elements.initialContaminant.value = state.initialContaminantKey || '';
   elements.initialConcentration.value = state.initialContaminantKey
     ? state.initialConcentrationInputs[state.initialContaminantKey] || ''
@@ -1783,7 +1788,7 @@ function renderEffluentBlock() {
   const incomingHeight = rawVolume !== '' ? state.incomingVolume * (166.66 / 10) : 0;
 
   elements.incomingVolume.value = rawVolume;
-  elements.incomingHeightMm.textContent = rawVolume !== '' ? incomingHeight.toFixed(2) : '';
+  elements.incomingHeightMm.textContent = rawVolume !== '' ? `${incomingHeight.toFixed(2)} mm` : '-- mm';
   elements.incomingContaminant.value = state.incomingContaminantKey || '';
   elements.incomingConcentration.value = state.incomingContaminantKey
     ? state.incomingConcentrationInputs[state.incomingContaminantKey] || ''
@@ -1816,8 +1821,8 @@ function renderPurges() {
   const coolingEnabled = elements.purgeCoolingEnabled.checked;
   const roEnabled = elements.purgeRoEnabled.checked;
 
-  elements.purgeCoolingInfo.textContent = `${formatNumber(coolingVolume * (166.66 / 10))} mm · ${formatNumber(coolingVolume / 20)} hr`;
-  elements.purgeRoInfo.textContent = `${formatNumber(roVolume * (166.66 / 10))} mm · ${formatNumber(roVolume / 15)} hr`;
+  elements.purgeCoolingInfo.textContent = `${formatNumber(coolingVolume * (166.66 / 10))} mm · ${formatDurationHoursMinutes(coolingVolume / 20)}`;
+  elements.purgeRoInfo.textContent = `${formatNumber(roVolume * (166.66 / 10))} mm · ${formatDurationHoursMinutes(roVolume / 15)}`;
 
   state.coolingVolume =
     (coolingEnabled ? coolingVolume : 0) +
@@ -2137,6 +2142,13 @@ function getContaminant(key) {
 
 function formatNumber(value) {
   return Number(value).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 4 });
+}
+
+function formatDurationHoursMinutes(hoursValue) {
+  const totalMinutes = Math.round(Math.max(0, hoursValue) * 60);
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return `${hours} hr : ${minutes} min`;
 }
 
 function formatSignedNumber(value) {
