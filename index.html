@@ -398,6 +398,14 @@ textarea:focus {
   border-color: rgba(138, 170, 201, 0.5);
 }
 
+.inline-note {
+  margin-left: 8px;
+  font-size: 12px;
+  font-style: italic;
+  font-weight: 400;
+  color: var(--text-secondary);
+}
+
 .choice-button.active {
   background: linear-gradient(180deg, #0d6eaa, #0b5c8f);
   color: #fff;
@@ -801,9 +809,8 @@ textarea:focus {
             </div>
 
             <div class="field">
-              <label>Volumen estimado (m³)</label>
+              <label>Volumen estimado (m³)<span class="inline-note">Referencia: 10 m³ = 166.66 mm</span></label>
               <button id="estimatedVolume" class="readonly-output" type="button" disabled>0.000</button>
-              <div class="notice">Referencia: 10 m³ = 166.66 mm</div>
             </div>
 
             <div class="field">
@@ -1121,6 +1128,10 @@ const state = {
   autoInput: '',
   initialConcentrations: Object.fromEntries(CONTAMINANTS.map((item) => [item.key, 0])),
   incomingConcentrations: Object.fromEntries(CONTAMINANTS.map((item) => [item.key, 0])),
+  attemptedAdvance: {
+    task: false,
+    state: false,
+  },
   settings: loadSettings(),
 };
 
@@ -1468,7 +1479,11 @@ function renderI18n() {
 }
 
 function setActiveScreen(index) {
-  if (index > getMaxUnlockedScreen()) return;
+  if (index > getMaxUnlockedScreen()) {
+    markCurrentStepAttempted();
+    render();
+    return;
+  }
   state.activeScreen = index;
   renderScreenState();
   renderTabs();
@@ -1476,11 +1491,24 @@ function setActiveScreen(index) {
 
 function getMaxUnlockedScreen() {
   let maxUnlocked = state.languageConfirmed ? 1 : 0;
-  if (isTaskStepComplete()) maxUnlocked = Math.max(maxUnlocked, 2);
-  if (isStateStepComplete()) maxUnlocked = Math.max(maxUnlocked, 3);
-  if (isEffluentStepComplete()) maxUnlocked = Math.max(maxUnlocked, 4);
-  if (isPurgesStepComplete()) maxUnlocked = Math.max(maxUnlocked, 5);
+  if (!isTaskStepComplete()) return maxUnlocked;
+  maxUnlocked = 2;
+  if (!isStateStepComplete()) return maxUnlocked;
+  maxUnlocked = 3;
+  if (!isEffluentStepComplete()) return maxUnlocked;
+  maxUnlocked = 4;
+  if (!isPurgesStepComplete()) return maxUnlocked;
+  maxUnlocked = 5;
   return maxUnlocked;
+}
+
+function markCurrentStepAttempted() {
+  if (state.activeScreen === 1) {
+    state.attemptedAdvance.task = true;
+  }
+  if (state.activeScreen === 2) {
+    state.attemptedAdvance.state = true;
+  }
 }
 
 function isTaskStepComplete() {
@@ -1540,10 +1568,15 @@ function renderModeButtons() {
 }
 
 function renderTaskErrors() {
-  showBlockError(elements.taskModeError, state.calculationMode ? '' : 'Selecciona un modo de cálculo');
+  showBlockError(
+    elements.taskModeError,
+    state.attemptedAdvance.task && !state.calculationMode ? 'Selecciona un modo de cálculo' : '',
+  );
   showBlockError(
     elements.inputModeError,
-    state.calculationMode === 'single' || state.inputMode ? '' : 'Selecciona un modo de carga',
+    state.attemptedAdvance.task && !(state.calculationMode === 'single' || state.inputMode)
+      ? 'Selecciona un modo de carga'
+      : '',
   );
 }
 
@@ -1633,10 +1666,17 @@ function renderStateBlock() {
     ? String(state.initialConcentrations[state.initialContaminantKey] || 0)
     : '';
 
-  showBlockError(elements.levelError, rawMm === '' || isValidLevel ? '' : 'Completa los datos antes de continuar.');
+  showBlockError(
+    elements.levelError,
+    state.attemptedAdvance.state && rawMm !== '' && !isValidLevel
+      ? 'Completa los datos antes de continuar.'
+      : '',
+  );
   showBlockError(
     elements.concentrationError,
-    !state.initialContaminantKey ? 'Completa los datos antes de continuar.' : '',
+    state.attemptedAdvance.state && !state.initialContaminantKey
+      ? 'Completa los datos antes de continuar.'
+      : '',
   );
 }
 
