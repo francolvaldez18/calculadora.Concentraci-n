@@ -1248,7 +1248,8 @@ function bindEvents() {
 
   elements.welcomeNextButton.addEventListener('click', () => {
     state.languageConfirmed = true;
-    setActiveScreen(1);
+    state.activeScreen = 1;
+    render();
   });
 
   elements.calcModeSelector.addEventListener('click', (event) => {
