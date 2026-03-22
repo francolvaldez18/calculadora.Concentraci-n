@@ -290,7 +290,7 @@ textarea:focus {
 
 .btn:hover,
 .choice-button:hover,
-.choice-button.is-active {
+.choice-button.active {
   background: var(--button-bg-hover);
   color: #fff;
 }
@@ -302,9 +302,7 @@ textarea:focus {
 
 .choice-buttons {
   display: flex;
-  flex-wrap: wrap;
   gap: 8px;
-  margin-bottom: 12px;
 }
 
 .task-workspace {
@@ -354,9 +352,21 @@ textarea:focus {
 }
 
 .choice-button {
-  background: rgba(255, 255, 255, 0.9);
-  color: var(--text-primary);
-  border: 1px solid var(--border);
+  height: 36px;
+  padding: 0 12px;
+  font-size: 13px;
+  border-radius: 8px;
+  border: 1px solid rgba(73,119,153,.35);
+  background: #fff;
+  color: #0b3a5b;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.choice-button.active {
+  background: linear-gradient(180deg, #0d6eaa, #0b5c8f);
+  color: #fff;
+  border-color: transparent;
 }
 
 .metric-chips {
@@ -707,21 +717,19 @@ textarea:focus {
               <h2 data-i18n="taskTitle">Tarea</h2>
               <div class="task-choice-grid task-mode-grid">
                 <div class="choice-buttons" id="calculation-mode-selector">
-                  <button type="button" class="choice-button is-active" data-mode="single" data-i18n="modeSingle">Único</button>
+                  <button type="button" class="choice-button" data-mode="single" data-i18n="modeSingle">Único</button>
                   <button type="button" class="choice-button" data-mode="multiple" data-i18n="modeMultiple">Múltiple</button>
                   <button type="button" class="choice-button" data-mode="ibc">IBC</button>
                 </div>
               </div>
-              <div class="notice" data-i18n="taskHelp">
-                Primero definí la tarea a evaluar. La selección del parámetro se hace recién en la pestaña Estado.
-              </div>
+              <div class="error hidden" id="task-mode-error"></div>
             </article>
 
             <article class="card task-card">
               <h2 data-i18n="dataLoadModeTitle">Modo de carga</h2>
               <div class="task-choice-grid input-mode-grid">
                 <div class="choice-buttons" id="input-mode-selector">
-                  <button type="button" class="choice-button is-active" data-input-mode="manual" data-i18n="inputManual">Manual</button>
+                  <button type="button" class="choice-button" data-input-mode="manual" data-i18n="inputManual">Manual</button>
                   <button type="button" class="choice-button" data-input-mode="automatic" data-i18n="inputAutomatic">Automático</button>
                 </div>
                 <label class="field">
@@ -732,6 +740,7 @@ textarea:focus {
                   </select>
                 </label>
               </div>
+              <div class="error hidden" id="input-mode-error"></div>
             </article>
           </div>
         </section>
@@ -1022,8 +1031,8 @@ const defaultSettings = {
 
 const state = {
   activeScreen: 0,
-  calculationMode: 'single',
-  inputMode: 'manual',
+  calculationMode: null,
+  inputMode: null,
   selectedParameter: 'Ba',
   initialVolume: 100,
   incomingVolume: 10,
@@ -1042,6 +1051,8 @@ const elements = {
   nav: document.querySelector('.nav'),
   calcModeSelector: document.getElementById('calculation-mode-selector'),
   inputModeSelector: document.getElementById('input-mode-selector'),
+  taskModeError: document.getElementById('task-mode-error'),
+  inputModeError: document.getElementById('input-mode-error'),
   singleParameterField: document.getElementById('single-parameter-field'),
   singleSelect: document.getElementById('single-parameter-select'),
   settingsOperationModeInline: document.getElementById('settings-operation-mode-inline'),
@@ -1252,6 +1263,7 @@ function render() {
   renderTabs();
   renderScreenState();
   renderModeButtons();
+  renderTaskErrors();
   populateSingleSelect();
   renderReadouts();
   renderAutoPanel();
@@ -1311,19 +1323,31 @@ function renderModeButtons() {
   if (state.calculationMode === 'ibc') elements.incomingVolume.value = '1';
 }
 
+function renderTaskErrors() {
+  showBlockError(elements.taskModeError, state.calculationMode ? '' : 'Selecciona un modo de cálculo');
+  showBlockError(elements.inputModeError, state.inputMode ? '' : 'Selecciona un modo de carga');
+}
+
+function showBlockError(node, message) {
+  node.textContent = message;
+  node.classList.toggle('hidden', !message);
+}
+
 function toggleActiveButton(container, datasetName, activeValue) {
   container.querySelectorAll('button').forEach((button) => {
     const value = datasetName === 'mode' ? button.dataset.mode : button.dataset.inputMode;
-    button.classList.toggle('is-active', value === activeValue);
+    button.classList.toggle('active', value === activeValue);
   });
 }
 
 function ensureSelectedParameter() {
   const visible = getVisibleContaminants().map((item) => item.key);
+  if (!visible.length) return;
   if (!visible.includes(state.selectedParameter)) state.selectedParameter = visible[0];
 }
 
 function getVisibleContaminants() {
+  if (!state.calculationMode) return [];
   const ordered = state.settings.contaminantOrder.map(getContaminant).filter(Boolean);
   if (state.calculationMode === 'single') return ordered.filter((item) => item.key === state.selectedParameter);
   return ordered.filter((item) => MULTIPLE_KEYS.includes(item.key));
@@ -1396,7 +1420,7 @@ function parseAutomaticLine(rawInput, fullOrder) {
   if (!chosenOrder) {
     return {
       valid: false,
-      error: `La línea debe tener ${orderWithoutLi.length} valores sin Li o ${fullOrder.length} valores con Li según el orden configurado.`,
+      error: 'La línea debe tener 13 o 14 valores según el orden configurado.',
       assignments: [],
     };
   }
