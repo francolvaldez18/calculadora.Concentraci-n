@@ -726,6 +726,48 @@ textarea:focus {
 #incoming-concentrations,
 #settings-limits-grid,
 #settings-cooling-grid {
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+}
+
+.settings-tile {
+  display: grid;
+  gap: 0;
+  border: 1px solid rgba(18, 56, 93, 0.18);
+  border-radius: 0;
+  overflow: hidden;
+  background: #fff;
+}
+
+.settings-tile-key {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 52px;
+  padding: 8px;
+  background: #246887;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.settings-tile-input {
+  height: 74px;
+  border: 0;
+  border-top: 1px solid rgba(18, 56, 93, 0.18);
+  border-radius: 0;
+  background: #fff;
+  font-size: 18px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.settings-tile-input:focus {
+  outline: 2px solid rgba(11, 92, 171, 0.14);
+  border-color: rgba(11, 92, 171, 0.46);
+}
+
+#incoming-concentrations {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
@@ -1950,9 +1992,9 @@ function renderSettingsField(key, type) {
   const value = type === 'limit' ? state.settings.limits[key] : state.settings.coolingComposition[key];
   const attr = type === 'limit' ? 'data-limit-key' : 'data-cooling-key';
   return `
-    <label class="field">
-      <span>${key}</span>
-      <input type="number" min="0" step="0.0001" ${attr}="${key}" value="${value ?? ''}" />
+    <label class="settings-tile">
+      <span class="settings-tile-key">${key}</span>
+      <input class="settings-tile-input" type="number" min="0" step="0.0001" ${attr}="${key}" value="${value ?? ''}" />
     </label>
   `;
 }
