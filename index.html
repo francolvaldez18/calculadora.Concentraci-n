@@ -472,26 +472,28 @@ textarea:focus {
 }
 
 .metric-chips {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
+  width: 100%;
 }
 
 .metric-chip {
-  min-width: 120px;
-  padding: 12px;
-  border-radius: 12px;
-  border: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.84);
-  font-size: 14px;
+  border: 1px solid rgba(13,110,170,.34);
+  border-radius: 10px;
+  background: rgba(255,255,255,.82);
+  padding: .6rem .65rem;
+  text-align: center;
+  font-size: .78rem;
   line-height: 1.3;
+  color: #093a63;
 }
 
-.metric-chip strong {
+.metric-chip b {
   display: block;
-  font-size: 16px;
-  line-height: 1.2;
-  color: var(--text-primary);
+  color: #0d6eaa;
+  font-size: .88rem;
+  margin-top: .15rem;
 }
 
 .metric-chip.ok {
@@ -780,6 +782,10 @@ textarea:focus {
 
 .settings-stack {
   grid-template-columns: 1fr;
+}
+
+.settings-mode-row {
+  grid-template-columns: 1fr 1fr;
 }
 
 .result-triple-grid {
@@ -1095,17 +1101,19 @@ textarea:focus {
       <div class="dev-dialog">
         <h2 data-i18n="settingsTitle">Ajustes</h2>
         <div class="grid settings-stack">
-          <label class="field">
-            <span data-i18n="safetyFactor">Factor de seguridad</span>
-            <input id="settings-safety-factor" type="number" min="1" step="0.01" />
-          </label>
-          <label class="field">
-            <span data-i18n="operationMode">Modo</span>
-            <select id="settings-operation-mode">
-              <option value="real">Real</option>
-              <option value="theoretical">Teórico</option>
-            </select>
-          </label>
+          <div class="grid settings-mode-row">
+            <label class="field">
+              <span data-i18n="operationMode">Modo</span>
+              <select id="settings-operation-mode">
+                <option value="real">Real</option>
+                <option value="theoretical">Teórico</option>
+              </select>
+            </label>
+            <label class="field">
+              <span data-i18n="safetyFactor">Factor de seguridad</span>
+              <input id="settings-safety-factor" type="number" min="1" step="0.01" />
+            </label>
+          </div>
           <div class="readonly-output" id="settings-order-readout"></div>
         </div>
 
@@ -1149,11 +1157,6 @@ const CONTAMINANTS = [
 const MULTIPLE_KEYS = ['Ba', 'Al', 'P', 'Fe', 'Ni', 'Cu', 'Zn', 'Pb', 'Cr', 'Mn', 'Co', 'B', 'Cd'];
 const DEFAULT_AUTO_ORDER = ['Ba', 'Al', 'P', 'Fe', 'Ni', 'Cu', 'Zn', 'Pb', 'Cr', 'Mn', 'Co', 'Li', 'B', 'Cd'];
 const STORAGE_KEY = 'concentration-calculator-settings-v3';
-const EXCEL_SOURCE_STATUS = {
-  available: false,
-  message:
-    'No se encontraron los Excel de referencia en el repositorio ni en los recursos del entorno; se aplica la lógica base del prompt y la app queda preparada para ajustar reglas cuando esos archivos estén disponibles.',
-};
 
 const TEXTS = {
   es: {
@@ -1228,7 +1231,6 @@ const defaultSettings = {
   locale: 'es',
   safetyFactor: 1.25,
   operationMode: 'real',
-  warningThresholdRatio: 0.9,
   contaminantOrder: CONTAMINANTS.map((item) => item.key),
   automaticOrder: [...DEFAULT_AUTO_ORDER],
   coolingComposition: Object.fromEntries(CONTAMINANTS.map((item) => [item.key, 0])),
@@ -1375,7 +1377,6 @@ function loadSettings() {
       locale: saved.locale ?? defaultSettings.locale,
       safetyFactor: saved.safetyFactor ?? defaultSettings.safetyFactor,
       operationMode: saved.operationMode ?? defaultSettings.operationMode,
-      warningThresholdRatio: saved.warningThresholdRatio ?? defaultSettings.warningThresholdRatio,
       contaminantOrder: Array.isArray(saved.contaminantOrder) ? saved.contaminantOrder : [...defaultSettings.contaminantOrder],
       automaticOrder: Array.isArray(saved.automaticOrder) ? saved.automaticOrder : [...defaultSettings.automaticOrder],
       coolingComposition: { ...defaultSettings.coolingComposition, ...(saved.coolingComposition || {}) },
@@ -1903,10 +1904,6 @@ function renderReadouts() {
         ? `Modo real · la concentración del efluente se corrige con FS (${formatNumber(state.settings.safetyFactor)}). Podés modificarlo en Ajustes.`
         : 'Modo teórico · se usa la concentración del efluente sin corrección. Podés modificarlo en Ajustes.';
   }
-
-  if (elements.coolingModeReadout) {
-    elements.coolingModeReadout.textContent = `Cooling water como etapa final adicional. ${EXCEL_SOURCE_STATUS.message}`;
-  }
 }
 
 function renderAutoPanel() {
@@ -2048,7 +2045,7 @@ function calculateContaminantResult(item) {
   const initialConcentration = state.initialConcentrations[item.key] || 0;
   const incomingRawConcentration = state.incomingConcentrations[item.key] || 0;
   const incomingCorrectedConcentration = applySafetyFactor(incomingRawConcentration);
-  const coolingConcentration = state.settings.coolingComposition[item.key] || 0;
+  const coolingConcentration = applySafetyFactor(state.settings.coolingComposition[item.key] || 0);
 
   const initialState = createInitialState(state.initialVolume, initialConcentration);
   const incomingStage = applyFlowStage(initialState, {
@@ -2063,12 +2060,7 @@ function calculateContaminantResult(item) {
     addedConcentration: coolingConcentration,
   });
 
-  const regulatoryLimit = state.settings.limits[item.key];
-  const operativeLimit = typeof regulatoryLimit === 'number' ? regulatoryLimit * 0.8 : null;
-  const warningLimit = operativeLimit === null ? null : operativeLimit * state.settings.warningThresholdRatio;
   const finalConcentration = coolingStage.finalState.concentration;
-  const margin = operativeLimit === null || finalConcentration === null ? null : operativeLimit - finalConcentration;
-  const status = evaluateStatus(finalConcentration, warningLimit, operativeLimit);
 
   return {
     item,
@@ -2082,11 +2074,6 @@ function calculateContaminantResult(item) {
     finalVolume: coolingStage.finalState.volume,
     afterIncomingConcentration: incomingStage.finalState.concentration,
     finalConcentration,
-    regulatoryLimit,
-    operativeLimit,
-    warningLimit,
-    margin,
-    status,
   };
 }
 
@@ -2131,19 +2118,10 @@ function renderOperationalCard(title, height, volume, concentration, elementLabe
   return `
     <article class="card">
       <h3>${title}</h3>
-      <div class="grid grid-3 result-triple-grid">
-        <div class="field">
-          <label>Altura (mm)</label>
-          <button class="readonly-output" type="button" disabled>${formatHeight(height)}</button>
-        </div>
-        <div class="field">
-          <label>Volumen (m³)</label>
-          <button class="readonly-output" type="button" disabled>${formatVolume(volume)}</button>
-        </div>
-        <div class="field">
-          <label>Concentración (${elementLabel} mg/L)</label>
-          <button class="readonly-output" type="button" disabled>${formatConcentration(concentration)}</button>
-        </div>
+      <div class="metric-chips result-triple-grid">
+        ${metricChip('Altura (mm)', formatHeight(height))}
+        ${metricChip('Volumen (m³)', formatVolume(volume))}
+        ${metricChip(`Concentración (${elementLabel} mg/L)`, formatConcentration(concentration))}
       </div>
     </article>
   `;
@@ -2154,15 +2132,12 @@ function readonlyOutput(label, value) {
 }
 
 function metricChip(label, value, tone = 'info') {
-  return `<div class="metric-chip ${tone}"><span>${label}</span><strong>${value}</strong></div>`;
+  return `<div class="metric-chip ${tone}">${label}<b>${value}</b></div>`;
 }
 
 function validateState() {
   const messages = [];
   const autoParsed = parseAutomaticLine(state.autoInput, getAutomaticOrder());
-  if (!EXCEL_SOURCE_STATUS.available) {
-    messages.push({ type: 'notice', text: EXCEL_SOURCE_STATUS.message });
-  }
   if (state.inputMode === 'automatic' && state.autoInput.trim() && !autoParsed.valid) {
     messages.push({ type: 'error', text: autoParsed.error });
   }
@@ -2173,7 +2148,7 @@ function validateState() {
     messages.push({ type: 'notice', text: 'La primera etapa queda con Vf = 0. No se calcula concentración hasta que se agregue volumen.' });
   }
   if (state.initialVolume + getIncomingVolume() + state.coolingVolume === 0) {
-    messages.push({ type: 'error', text: 'El volumen final total es 0. La concentración final no puede calcularse.' });
+    messages.push({ type: 'error', text: 'El volumen final total es 0. La concentración no puede calcularse.' });
   }
   if (state.calculationMode === 'ibc') {
     messages.push({ type: 'notice', text: 'Modo IBC activo: el ingreso queda fijado en 1 m³ y usa la misma secuencia de balance con criterios operativos propios preparados para ampliación.' });
