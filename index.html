@@ -723,7 +723,7 @@ textarea:focus {
       />
 
       <section class="content">
-        <div class="tabs" id="tabs"></div>
+        <div class="tabs hidden" id="tabs"></div>
 
         <section class="screen is-active" id="screen-language" data-screen="0">
           <div class="welcome-main">
@@ -893,7 +893,7 @@ textarea:focus {
           <div class="cards" id="results-cards"></div>
         </section>
 
-        <div class="nav" id="globalNav">
+        <div class="nav hidden" id="globalNav">
           <button class="btn" id="btnHome" type="button">Inicio</button>
           <div class="nav-right">
             <button class="btn" id="btnBack" type="button">Volver</button>
@@ -1178,6 +1178,8 @@ init();
 activateLocalPreview();
 
 function init() {
+  state.settings.locale = 'es';
+  saveSettings();
   renderTabs();
   populateSingleSelect();
   populateInitialContaminantSelect();
