@@ -315,6 +315,10 @@ textarea:focus {
   gap: 12px;
 }
 
+.calc-mode-block {
+  display: none;
+}
+
 .task-choice-grid {
   display: grid;
   gap: 12px;
@@ -713,7 +717,7 @@ textarea:focus {
 
         <section class="screen" data-screen="1">
           <div class="task-workspace">
-            <article class="card task-card">
+            <article class="card task-card" id="input-mode-card">
               <h2 data-i18n="taskTitle">Tarea</h2>
               <div class="task-choice-grid task-mode-grid">
                 <div class="choice-buttons" id="calculation-mode-selector">
@@ -746,80 +750,86 @@ textarea:focus {
         </section>
 
         <section class="screen" data-screen="2">
-          <div class="grid grid-3">
-            <article class="card">
-              <h2 data-i18n="statusTitle">Estado</h2>
-              <label class="field" id="single-parameter-field">
-                <span data-i18n="selectedParameter">Parámetro seleccionado</span>
-                <select id="single-parameter-select"></select>
-              </label>
-              <div class="notice" data-i18n="statusHelp">
-                Cargá el estado inicial de la pileta y la caracterización del ingreso según la tarea seleccionada.
-              </div>
-            </article>
+          <div id="calcSingle" class="calc-mode-block"></div>
+          <div id="calcMultiple" class="calc-mode-block"></div>
+          <div id="calcIBC" class="calc-mode-block"></div>
 
-            <article class="card auto-panel hidden" id="auto-input-panel">
-            <h2 data-i18n="autoLoadTitle">Carga automática</h2>
-            <label class="field">
-              <span data-i18n="pasteLine">Pegar línea de datos</span>
-              <textarea
-                id="auto-input-text"
-                rows="4"
-                placeholder="347.4710 0.0390 0.0000 0.3540 0.0080 0.0000 0.0160 0.0050 0.0070 0.0050 0.0010 0.0010 1.1780 0.0000"
-              ></textarea>
-            </label>
-            <div class="notice" id="auto-input-help">
-              Orden obligatorio: Ba, Al, P, Fe, Ni, Cu, Zn, Pb, Cr, Mn, Co, Li (opcional), B, Cd.
+          <div id="calcShared" class="hidden">
+            <div class="grid grid-3">
+              <article class="card">
+                <h2 data-i18n="statusTitle">Estado</h2>
+                <label class="field" id="single-parameter-field">
+                  <span data-i18n="selectedParameter">Parámetro seleccionado</span>
+                  <select id="single-parameter-select"></select>
+                </label>
+                <div class="notice" data-i18n="statusHelp">
+                  Cargá el estado inicial de la pileta y la caracterización del ingreso según la tarea seleccionada.
+                </div>
+              </article>
+
+              <article class="card auto-panel hidden" id="auto-input-panel">
+              <h2 data-i18n="autoLoadTitle">Carga automática</h2>
+              <label class="field">
+                <span data-i18n="pasteLine">Pegar línea de datos</span>
+                <textarea
+                  id="auto-input-text"
+                  rows="4"
+                  placeholder="347.4710 0.0390 0.0000 0.3540 0.0080 0.0000 0.0160 0.0050 0.0070 0.0050 0.0010 0.0010 1.1780 0.0000"
+                ></textarea>
+              </label>
+              <div class="notice" id="auto-input-help">
+                Orden obligatorio: Ba, Al, P, Fe, Ni, Cu, Zn, Pb, Cr, Mn, Co, Li (opcional), B, Cd.
+              </div>
+              <div class="cards" id="auto-preview"></div>
+              </article>
             </div>
-            <div class="cards" id="auto-preview"></div>
-            </article>
-          </div>
 
-          <div class="grid grid-3">
-            <article class="card">
-              <h2 data-i18n="stageInitial">Etapa 1 · Estado inicial</h2>
-              <label class="field">
-                <span data-i18n="initialVolume">Volumen inicial V₀ (m³)</span>
-                <input id="initial-volume" type="number" min="0" step="0.01" value="100" />
-              </label>
-              <div class="notice" data-i18n="initialStageHelp">
-                Ingresar el volumen actual de la pileta y las concentraciones iniciales.
-              </div>
-            </article>
+            <div class="grid grid-3">
+              <article class="card">
+                <h2 data-i18n="stageInitial">Etapa 1 · Estado inicial</h2>
+                <label class="field">
+                  <span data-i18n="initialVolume">Volumen inicial V₀ (m³)</span>
+                  <input id="initial-volume" type="number" min="0" step="0.01" value="100" />
+                </label>
+                <div class="notice" data-i18n="initialStageHelp">
+                  Ingresar el volumen actual de la pileta y las concentraciones iniciales.
+                </div>
+              </article>
 
-            <article class="card">
-              <h2 id="incoming-stage-title" data-i18n="stageAddition">Etapa 2 · Ingreso</h2>
-              <label class="field">
-                <span data-i18n="incomingVolume">Volumen de ingreso V₁ (m³)</span>
-                <input id="incoming-volume" type="number" min="0" step="0.01" value="10" />
-              </label>
-              <div class="readonly-output" id="factor-readout"></div>
-            </article>
+              <article class="card">
+                <h2 id="incoming-stage-title" data-i18n="stageAddition">Etapa 2 · Ingreso</h2>
+                <label class="field">
+                  <span data-i18n="incomingVolume">Volumen de ingreso V₁ (m³)</span>
+                  <input id="incoming-volume" type="number" min="0" step="0.01" value="10" />
+                </label>
+                <div class="readonly-output" id="factor-readout"></div>
+              </article>
 
-            <article class="card">
-              <h2 data-i18n="stageCooling">Etapa 3 · Cooling water</h2>
-              <label class="field">
-                <span data-i18n="coolingVolume">Volumen cooling water (m³)</span>
-                <input id="cooling-volume" type="number" min="0" step="0.01" value="0" />
-              </label>
-              <div class="readonly-output" id="cooling-mode-readout"></div>
-            </article>
-          </div>
+              <article class="card">
+                <h2 data-i18n="stageCooling">Etapa 3 · Cooling water</h2>
+                <label class="field">
+                  <span data-i18n="coolingVolume">Volumen cooling water (m³)</span>
+                  <input id="cooling-volume" type="number" min="0" step="0.01" value="0" />
+                </label>
+                <div class="readonly-output" id="cooling-mode-readout"></div>
+              </article>
+            </div>
 
-          <div class="grid grid-3 concentrations-section">
-            <article class="card">
-              <h2 data-i18n="initialConcentrationsTitle">Concentraciones iniciales</h2>
-              <div id="initial-concentrations" class="grid"></div>
-            </article>
+            <div class="grid grid-3 concentrations-section">
+              <article class="card">
+                <h2 data-i18n="initialConcentrationsTitle">Concentraciones iniciales</h2>
+                <div id="initial-concentrations" class="grid"></div>
+              </article>
 
-            <article class="card">
-              <h2 id="incoming-concentrations-title" data-i18n="incomingConcentrationsTitle">Concentraciones de ingreso</h2>
-              <div id="incoming-concentrations" class="grid"></div>
-            </article>
-          </div>
+              <article class="card">
+                <h2 id="incoming-concentrations-title" data-i18n="incomingConcentrationsTitle">Concentraciones de ingreso</h2>
+                <div id="incoming-concentrations" class="grid"></div>
+              </article>
+            </div>
 
-          <div class="state-actions">
-            <button class="btn" id="btnSettings" type="button">Ajustes</button>
+            <div class="state-actions">
+              <button class="btn" id="btnSettings" type="button">Ajustes</button>
+            </div>
           </div>
         </section>
 
@@ -1050,6 +1060,11 @@ const elements = {
   welcomeNextButton: document.getElementById('welcomeNextButton'),
   nav: document.querySelector('.nav'),
   calcModeSelector: document.getElementById('calculation-mode-selector'),
+  calcSingle: document.getElementById('calcSingle'),
+  calcMultiple: document.getElementById('calcMultiple'),
+  calcIBC: document.getElementById('calcIBC'),
+  calcShared: document.getElementById('calcShared'),
+  inputModeCard: document.getElementById('input-mode-card'),
   inputModeSelector: document.getElementById('input-mode-selector'),
   taskModeError: document.getElementById('task-mode-error'),
   inputModeError: document.getElementById('input-mode-error'),
@@ -1264,6 +1279,7 @@ function render() {
   renderScreenState();
   renderModeButtons();
   renderTaskErrors();
+  renderCalcMode();
   populateSingleSelect();
   renderReadouts();
   renderAutoPanel();
@@ -1316,8 +1332,12 @@ function renderScreenState() {
 }
 
 function renderModeButtons() {
+  if (state.calculationMode === 'single') {
+    state.inputMode = 'manual';
+  }
   toggleActiveButton(elements.calcModeSelector, 'mode', state.calculationMode);
   toggleActiveButton(elements.inputModeSelector, 'inputMode', state.inputMode);
+  elements.inputModeCard.classList.toggle('hidden', state.calculationMode === 'single');
   elements.singleParameterField.classList.toggle('hidden', state.calculationMode !== 'single');
   elements.incomingVolume.disabled = state.calculationMode === 'ibc';
   if (state.calculationMode === 'ibc') elements.incomingVolume.value = '1';
@@ -1325,12 +1345,41 @@ function renderModeButtons() {
 
 function renderTaskErrors() {
   showBlockError(elements.taskModeError, state.calculationMode ? '' : 'Selecciona un modo de cálculo');
-  showBlockError(elements.inputModeError, state.inputMode ? '' : 'Selecciona un modo de carga');
+  showBlockError(
+    elements.inputModeError,
+    state.calculationMode === 'single' || state.inputMode ? '' : 'Selecciona un modo de carga',
+  );
 }
 
 function showBlockError(node, message) {
   node.textContent = message;
   node.classList.toggle('hidden', !message);
+}
+
+function renderCalcMode() {
+  elements.calcSingle.style.display = 'none';
+  elements.calcMultiple.style.display = 'none';
+  elements.calcIBC.style.display = 'none';
+
+  if (!state.calculationMode) {
+    elements.calcShared.classList.add('hidden');
+    return;
+  }
+
+  elements.calcShared.classList.remove('hidden');
+
+  if (state.calculationMode === 'single') {
+    elements.calcSingle.appendChild(elements.calcShared);
+    elements.calcSingle.style.display = 'block';
+  }
+  if (state.calculationMode === 'multiple') {
+    elements.calcMultiple.appendChild(elements.calcShared);
+    elements.calcMultiple.style.display = 'block';
+  }
+  if (state.calculationMode === 'ibc') {
+    elements.calcIBC.appendChild(elements.calcShared);
+    elements.calcIBC.style.display = 'block';
+  }
 }
 
 function toggleActiveButton(container, datasetName, activeValue) {
