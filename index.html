@@ -1267,10 +1267,12 @@ function bindEvents() {
     render();
   });
 
-  elements.singleSelect.addEventListener('change', (event) => {
-    state.selectedParameter = event.target.value;
-    render();
-  });
+  if (elements.singleSelect) {
+    elements.singleSelect.addEventListener('change', (event) => {
+      state.selectedParameter = event.target.value;
+      render();
+    });
+  }
 
   elements.autoInputText.addEventListener('input', (event) => {
     state.autoInput = event.target.value;
@@ -1302,20 +1304,26 @@ function bindEvents() {
     renderResults();
   });
 
-  elements.initialVolume.addEventListener('input', (event) => {
-    state.initialVolume = sanitizeNumber(event.target.value);
-    render();
-  });
+  if (elements.initialVolume) {
+    elements.initialVolume.addEventListener('input', (event) => {
+      state.initialVolume = sanitizeNumber(event.target.value);
+      render();
+    });
+  }
 
-  elements.incomingVolume.addEventListener('input', (event) => {
-    state.incomingVolume = state.calculationMode === 'ibc' ? 1 : sanitizeNumber(event.target.value);
-    render();
-  });
+  if (elements.incomingVolume) {
+    elements.incomingVolume.addEventListener('input', (event) => {
+      state.incomingVolume = state.calculationMode === 'ibc' ? 1 : sanitizeNumber(event.target.value);
+      render();
+    });
+  }
 
-  elements.coolingVolume.addEventListener('input', (event) => {
-    state.coolingVolume = sanitizeNumber(event.target.value);
-    render();
-  });
+  if (elements.coolingVolume) {
+    elements.coolingVolume.addEventListener('input', (event) => {
+      state.coolingVolume = sanitizeNumber(event.target.value);
+      render();
+    });
+  }
 
   elements.settingsSafetyFactor.addEventListener('input', (event) => {
     state.settings.safetyFactor = Math.max(1, sanitizeNumber(event.target.value, 1));
@@ -1500,9 +1508,13 @@ function renderModeButtons() {
   toggleActiveButton(elements.inputModeSelector, 'inputMode', state.inputMode);
   elements.inputModeSelectorWrap.classList.toggle('hidden', state.calculationMode === 'single');
   elements.singleModeNotice.classList.toggle('hidden', state.calculationMode !== 'single');
-  elements.singleParameterField.classList.toggle('hidden', state.calculationMode !== 'single');
-  elements.incomingVolume.disabled = state.calculationMode === 'ibc';
-  if (state.calculationMode === 'ibc') elements.incomingVolume.value = '1';
+  if (elements.singleParameterField) {
+    elements.singleParameterField.classList.toggle('hidden', state.calculationMode !== 'single');
+  }
+  if (elements.incomingVolume) {
+    elements.incomingVolume.disabled = state.calculationMode === 'ibc';
+    if (state.calculationMode === 'ibc') elements.incomingVolume.value = '1';
+  }
 }
 
 function renderTaskErrors() {
@@ -1569,6 +1581,7 @@ function getAutomaticOrder() {
 }
 
 function populateSingleSelect() {
+  if (!elements.singleSelect) return;
   elements.singleSelect.innerHTML = state.settings.contaminantOrder
     .map((key) => `<option value="${key}">${key}</option>`)
     .join('');
@@ -1629,12 +1642,16 @@ function renderPurges() {
 }
 
 function renderReadouts() {
-  elements.factorReadout.textContent =
-    state.settings.operationMode === 'real'
-      ? `Modo real · la concentración de ingreso se corrige con FS (${formatNumber(state.settings.safetyFactor)}).`
-      : 'Modo teórico · se usa la concentración de ingreso sin corrección.';
+  if (elements.factorReadout) {
+    elements.factorReadout.textContent =
+      state.settings.operationMode === 'real'
+        ? `Modo real · la concentración de ingreso se corrige con FS (${formatNumber(state.settings.safetyFactor)}).`
+        : 'Modo teórico · se usa la concentración de ingreso sin corrección.';
+  }
 
-  elements.coolingModeReadout.textContent = `Cooling water como etapa final adicional. ${EXCEL_SOURCE_STATUS.message}`;
+  if (elements.coolingModeReadout) {
+    elements.coolingModeReadout.textContent = `Cooling water como etapa final adicional. ${EXCEL_SOURCE_STATUS.message}`;
+  }
 }
 
 function renderAutoPanel() {
@@ -1662,10 +1679,14 @@ function renderAutoPanel() {
 
 function renderTaskSpecificLabels() {
   const isIbc = state.calculationMode === 'ibc';
-  elements.incomingStageTitle.textContent = isIbc ? 'Etapa 2 · IBC' : 'Etapa 2 · Ingreso';
-  elements.incomingConcentrationsTitle.textContent = isIbc
-    ? 'Caracterización del IBC'
-    : 'Caracterización del efluente';
+  if (elements.incomingStageTitle) {
+    elements.incomingStageTitle.textContent = isIbc ? 'Etapa 2 · IBC' : 'Etapa 2 · Ingreso';
+  }
+  if (elements.incomingConcentrationsTitle) {
+    elements.incomingConcentrationsTitle.textContent = isIbc
+      ? 'Caracterización del IBC'
+      : 'Caracterización del efluente';
+  }
 }
 
 function parseAutomaticLine(rawInput, fullOrder) {
@@ -1710,6 +1731,10 @@ function applyAutomaticInput() {
 }
 
 function renderInputs() {
+  if (!elements.initialContainer || !elements.incomingContainer) {
+    if (elements.incomingVolume) elements.incomingVolume.value = String(getIncomingVolume());
+    return;
+  }
   const contaminants = getVisibleContaminants();
   elements.initialContainer.innerHTML = contaminants.map((item) => renderConcentrationField(item, 'initial')).join('');
   elements.incomingContainer.innerHTML = contaminants.map((item) => renderConcentrationField(item, 'incoming')).join('');
@@ -1717,9 +1742,9 @@ function renderInputs() {
   bindConcentrationInputs(elements.initialContainer, 'initial');
   bindConcentrationInputs(elements.incomingContainer, 'incoming');
 
-  elements.initialVolume.value = String(state.initialVolume);
-  elements.incomingVolume.value = String(getIncomingVolume());
-  elements.coolingVolume.value = String(state.coolingVolume);
+  if (elements.initialVolume) elements.initialVolume.value = String(state.initialVolume);
+  if (elements.incomingVolume) elements.incomingVolume.value = String(getIncomingVolume());
+  if (elements.coolingVolume) elements.coolingVolume.value = String(state.coolingVolume);
 }
 
 function renderConcentrationField(item, type) {
