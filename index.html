@@ -1449,9 +1449,7 @@ function bindEvents() {
 
   elements.initialContaminant.addEventListener('change', (event) => {
     state.initialContaminantKey = event.target.value;
-    if (state.calculationMode === 'single') {
-      state.selectedParameter = event.target.value;
-    }
+    if (state.calculationMode === 'single') syncSingleModeElement(event.target.value);
     renderStateBlock();
     render();
   });
@@ -1469,9 +1467,7 @@ function bindEvents() {
 
   elements.incomingContaminant.addEventListener('change', (event) => {
     state.incomingContaminantKey = event.target.value;
-    if (state.calculationMode === 'single') {
-      state.selectedParameter = event.target.value;
-    }
+    if (state.calculationMode === 'single') syncSingleModeElement(event.target.value);
     renderEffluentBlock();
     render();
   });
@@ -1631,7 +1627,7 @@ function renderI18n() {
 }
 
 function setActiveScreen(index) {
-  if (index > getMaxUnlockedScreen()) {
+  if (index > state.activeScreen && !canReachScreen(index)) {
     markCurrentStepAttempted();
     render();
     return;
@@ -1642,16 +1638,27 @@ function setActiveScreen(index) {
 }
 
 function getMaxUnlockedScreen() {
-  let maxUnlocked = state.languageConfirmed ? 1 : 0;
-  if (!isTaskStepComplete()) return maxUnlocked;
-  maxUnlocked = 2;
-  if (!isStateStepComplete()) return maxUnlocked;
-  maxUnlocked = 3;
-  if (!isEffluentStepComplete()) return maxUnlocked;
-  maxUnlocked = 4;
-  if (!isPurgesStepComplete()) return maxUnlocked;
-  maxUnlocked = 5;
+  let maxUnlocked = 0;
+  while (maxUnlocked + 1 < elements.screens.length && canReachScreen(maxUnlocked + 1)) {
+    maxUnlocked += 1;
+  }
   return maxUnlocked;
+}
+
+function canAdvancePastScreen(screenIndex) {
+  if (screenIndex === 0) return state.languageConfirmed;
+  if (screenIndex === 1) return isTaskStepComplete();
+  if (screenIndex === 2) return isStateStepComplete();
+  if (screenIndex === 3) return isEffluentStepComplete();
+  if (screenIndex === 4) return isPurgesStepComplete();
+  return true;
+}
+
+function canReachScreen(targetIndex) {
+  for (let screenIndex = 0; screenIndex < targetIndex; screenIndex += 1) {
+    if (!canAdvancePastScreen(screenIndex)) return false;
+  }
+  return true;
 }
 
 function markCurrentStepAttempted() {
@@ -1709,6 +1716,8 @@ function renderModeButtons() {
   const automaticButton = elements.inputModeSelector.querySelector('[data-input-mode="automatic"]');
   if (state.calculationMode === 'single') {
     state.inputMode = 'manual';
+    const singleKey = state.selectedParameter || state.initialContaminantKey || state.incomingContaminantKey || '';
+    if (singleKey) syncSingleModeElement(singleKey);
   }
   toggleActiveButton(elements.calcModeSelector, 'mode', state.calculationMode);
   toggleActiveButton(elements.inputModeSelector, 'inputMode', state.inputMode);
@@ -1783,6 +1792,12 @@ function ensureSelectedParameter() {
   const visible = getVisibleContaminants().map((item) => item.key);
   if (!visible.length) return;
   if (!visible.includes(state.selectedParameter)) state.selectedParameter = visible[0];
+}
+
+function syncSingleModeElement(key) {
+  state.selectedParameter = key;
+  state.initialContaminantKey = key;
+  state.incomingContaminantKey = key;
 }
 
 function getVisibleContaminants() {
