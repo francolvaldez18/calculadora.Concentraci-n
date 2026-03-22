@@ -118,7 +118,7 @@ button {
 
 .tabs {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 8px;
   margin-bottom: 12px;
 }
@@ -508,6 +508,20 @@ textarea:focus {
   justify-content: flex-end;
 }
 
+.top-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.top-row h3 {
+  margin: 0;
+  font-size: 20px;
+  line-height: 1.2;
+  color: var(--text-primary);
+}
+
 .nav {
   width: 100%;
   margin-top: 14px;
@@ -752,53 +766,42 @@ textarea:focus {
           </div>
         </section>
 
-        <section class="screen" data-screen="2">
+        <section class="screen" data-screen="2" id="screen-state">
+          <div class="top-row">
+            <h3>Estado inicial de la pileta WWB</h3>
+            <button class="btn" id="settingsBtn" type="button">⚙️ Ajustes</button>
+          </div>
+
+          <div class="grid grid-3">
+            <div class="field">
+              <label>Nivel (mm)</label>
+              <input id="tankLevelMm" type="number" step="0.01" placeholder="1200 - 4000" />
+              <div id="levelError" class="error hidden"></div>
+            </div>
+
+            <div class="field">
+              <label>Volumen estimado (m³)</label>
+              <button id="estimatedVolume" class="readonly-output" type="button" disabled>0.000</button>
+              <div class="notice">Referencia: 10 m³ = 166.66 mm</div>
+            </div>
+
+            <div class="field">
+              <label>Contaminante</label>
+              <select id="initialContaminant"></select>
+              <label style="margin-top:8px;">Concentración inicial (mg/L)</label>
+              <input id="initialConcentration" type="number" step="0.0001" placeholder="0.0000" />
+              <div id="concentrationError" class="error hidden"></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="screen" data-screen="3">
           <div id="calcSingle" class="calc-mode-block"></div>
           <div id="calcMultiple" class="calc-mode-block"></div>
           <div id="calcIBC" class="calc-mode-block"></div>
 
           <div id="calcShared" class="hidden">
             <div class="grid grid-3">
-              <article class="card">
-                <h2 data-i18n="statusTitle">Estado</h2>
-                <label class="field" id="single-parameter-field">
-                  <span data-i18n="selectedParameter">Parámetro seleccionado</span>
-                  <select id="single-parameter-select"></select>
-                </label>
-                <div class="notice" data-i18n="statusHelp">
-                  Cargá el estado inicial de la pileta y la caracterización del ingreso según la tarea seleccionada.
-                </div>
-              </article>
-
-              <article class="card auto-panel hidden" id="auto-input-panel">
-              <h2 data-i18n="autoLoadTitle">Carga automática</h2>
-              <label class="field">
-                <span data-i18n="pasteLine">Pegar línea de datos</span>
-                <textarea
-                  id="auto-input-text"
-                  rows="4"
-                  placeholder="347.4710 0.0390 0.0000 0.3540 0.0080 0.0000 0.0160 0.0050 0.0070 0.0050 0.0010 0.0010 1.1780 0.0000"
-                ></textarea>
-              </label>
-              <div class="notice" id="auto-input-help">
-                Orden obligatorio: Ba, Al, P, Fe, Ni, Cu, Zn, Pb, Cr, Mn, Co, Li (opcional), B, Cd.
-              </div>
-              <div class="cards" id="auto-preview"></div>
-              </article>
-            </div>
-
-            <div class="grid grid-3">
-              <article class="card">
-                <h2 data-i18n="stageInitial">Etapa 1 · Estado inicial</h2>
-                <label class="field">
-                  <span data-i18n="initialVolume">Volumen inicial V₀ (m³)</span>
-                  <input id="initial-volume" type="number" min="0" step="0.01" value="100" />
-                </label>
-                <div class="notice" data-i18n="initialStageHelp">
-                  Ingresar el volumen actual de la pileta y las concentraciones iniciales.
-                </div>
-              </article>
-
               <article class="card">
                 <h2 id="incoming-stage-title" data-i18n="stageAddition">Etapa 2 · Ingreso</h2>
                 <label class="field">
@@ -808,20 +811,20 @@ textarea:focus {
                 <div class="readonly-output" id="factor-readout"></div>
               </article>
 
-              <article class="card">
-                <h2 data-i18n="stageCooling">Etapa 3 · Cooling water</h2>
+              <article class="card auto-panel hidden" id="auto-input-panel">
+                <h2 data-i18n="autoLoadTitle">Carga automática</h2>
                 <label class="field">
-                  <span data-i18n="coolingVolume">Volumen cooling water (m³)</span>
-                  <input id="cooling-volume" type="number" min="0" step="0.01" value="0" />
+                  <span data-i18n="pasteLine">Pegar línea de datos</span>
+                  <textarea
+                    id="auto-input-text"
+                    rows="4"
+                    placeholder="347.4710 0.0390 0.0000 0.3540 0.0080 0.0000 0.0160 0.0050 0.0070 0.0050 0.0010 0.0010 1.1780 0.0000"
+                  ></textarea>
                 </label>
-                <div class="readonly-output" id="cooling-mode-readout"></div>
-              </article>
-            </div>
-
-            <div class="grid grid-3 concentrations-section">
-              <article class="card">
-                <h2 data-i18n="initialConcentrationsTitle">Concentraciones iniciales</h2>
-                <div id="initial-concentrations" class="grid"></div>
+                <div class="notice" id="auto-input-help">
+                  Orden obligatorio: Ba, Al, P, Fe, Ni, Cu, Zn, Pb, Cr, Mn, Co, Li (opcional), B, Cd.
+                </div>
+                <div class="cards" id="auto-preview"></div>
               </article>
 
               <article class="card">
@@ -829,14 +832,51 @@ textarea:focus {
                 <div id="incoming-concentrations" class="grid"></div>
               </article>
             </div>
-
-            <div class="state-actions">
-              <button class="btn" id="btnSettings" type="button">Ajustes</button>
-            </div>
           </div>
         </section>
 
-        <section class="screen" data-screen="3">
+        <section class="screen" data-screen="4">
+          <div class="grid grid-3">
+            <article class="card">
+              <h2>Cooling Water</h2>
+              <label class="field">
+                <span>Volumen (m³)</span>
+                <input id="purgeCoolingVolume" type="number" min="0" step="0.01" value="0" />
+              </label>
+              <label class="field">
+                <span>Disponible</span>
+                <input id="purgeCoolingEnabled" type="checkbox" />
+              </label>
+              <div class="readonly-output" id="purgeCoolingInfo"></div>
+            </article>
+
+            <article class="card">
+              <h2>RO Concentrate</h2>
+              <label class="field">
+                <span>Volumen (m³)</span>
+                <input id="purgeRoVolume" type="number" min="0" step="0.01" value="0" />
+              </label>
+              <label class="field">
+                <span>Disponible</span>
+                <input id="purgeRoEnabled" type="checkbox" />
+              </label>
+              <div class="readonly-output" id="purgeRoInfo"></div>
+            </article>
+
+            <article class="card">
+              <h2>Backwashing</h2>
+              <div class="grid">
+                <label><input id="purgeBackwashTotal" type="checkbox" /> Backwashing Train - Soft Water Total (+1000 mm)</label>
+                <label><input id="purgeBackwashSoftener" type="checkbox" /> Solo Softener (+333 mm)</label>
+                <label><input id="purgeBackwashCarbon" type="checkbox" /> Solo Carbon Activado (+333 mm)</label>
+                <label><input id="purgeBackwashMmf" type="checkbox" /> Solo MMF (+333 mm)</label>
+                <label><input id="purgeBackwashWwt" type="checkbox" /> Backwashing MMF - WWT (+500 mm)</label>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section class="screen" data-screen="5">
           <div class="cards">
             <article class="card">
               <h2 data-i18n="resultsTitle">Evaluación operativa</h2>
@@ -964,7 +1004,7 @@ const EXCEL_SOURCE_STATUS = {
 
 const TEXTS = {
   es: {
-    tabs: ['Idioma', 'Tarea', 'Estado', 'Resultados'],
+    tabs: ['Idioma', 'Tarea', 'Estado', 'Efluente', 'Purgas', 'Resultados'],
     welcomeTitle: 'Concentration Calculator - WWT - Utilities',
     welcomeDescription: 'Herramienta para el cálculo y evaluación de concentración de contaminantes en el sistema WWB.',
     selectLanguageText: 'Seleccionar idioma',
@@ -986,7 +1026,7 @@ const TEXTS = {
     devButton: 'Developer',
   },
   en: {
-    tabs: ['Language', 'Task', 'State', 'Results'],
+    tabs: ['Language', 'Task', 'State', 'Effluent', 'Purges', 'Results'],
     welcomeTitle: 'Concentration Calculator - WWT - Utilities',
     welcomeDescription: 'Tool for calculating and evaluating contaminant concentration in the WWB system.',
     selectLanguageText: 'Select language',
@@ -1008,7 +1048,7 @@ const TEXTS = {
     devButton: 'Developer',
   },
   ko: {
-    tabs: ['언어', '작업', '상태', '결과'],
+    tabs: ['언어', '작업', '상태', '유입수', '배출수', '결과'],
     welcomeTitle: 'Concentration Calculator - WWT - Utilities',
     welcomeDescription: 'WWB 시스템의 오염물질 농도 계산 및 평가 도구',
     selectLanguageText: '언어 선택',
@@ -1047,6 +1087,7 @@ const state = {
   calculationMode: null,
   inputMode: null,
   selectedParameter: 'Ba',
+  tankLevelMm: 0,
   initialVolume: 100,
   incomingVolume: 10,
   coolingVolume: 0,
@@ -1087,6 +1128,12 @@ const elements = {
   coolingModeReadout: document.getElementById('cooling-mode-readout'),
   initialContainer: document.getElementById('initial-concentrations'),
   incomingContainer: document.getElementById('incoming-concentrations'),
+  tankLevelMm: document.getElementById('tankLevelMm'),
+  estimatedVolume: document.getElementById('estimatedVolume'),
+  initialContaminant: document.getElementById('initialContaminant'),
+  initialConcentration: document.getElementById('initialConcentration'),
+  levelError: document.getElementById('levelError'),
+  concentrationError: document.getElementById('concentrationError'),
   validationMessages: document.getElementById('validation-messages'),
   headlineMetrics: document.getElementById('headline-metrics'),
   resultsCards: document.getElementById('results-cards'),
@@ -1100,12 +1147,23 @@ const elements = {
   homeButton: document.getElementById('btnHome'),
   backButton: document.getElementById('btnBack'),
   nextButton: document.getElementById('btnNext'),
-  settingsButton: document.getElementById('btnSettings'),
+  settingsButton: document.getElementById('settingsBtn'),
   openDevModal: document.getElementById('developerBtn'),
   closeDevModal: document.getElementById('close-dev-modal'),
   devModal: document.getElementById('dev-modal'),
   settingsModal: document.getElementById('settings-modal'),
   closeSettingsModal: document.getElementById('close-settings-modal'),
+  purgeCoolingVolume: document.getElementById('purgeCoolingVolume'),
+  purgeCoolingEnabled: document.getElementById('purgeCoolingEnabled'),
+  purgeCoolingInfo: document.getElementById('purgeCoolingInfo'),
+  purgeRoVolume: document.getElementById('purgeRoVolume'),
+  purgeRoEnabled: document.getElementById('purgeRoEnabled'),
+  purgeRoInfo: document.getElementById('purgeRoInfo'),
+  purgeBackwashTotal: document.getElementById('purgeBackwashTotal'),
+  purgeBackwashSoftener: document.getElementById('purgeBackwashSoftener'),
+  purgeBackwashCarbon: document.getElementById('purgeBackwashCarbon'),
+  purgeBackwashMmf: document.getElementById('purgeBackwashMmf'),
+  purgeBackwashWwt: document.getElementById('purgeBackwashWwt'),
 };
 
 init();
@@ -1114,6 +1172,7 @@ activateLocalPreview();
 function init() {
   renderTabs();
   populateSingleSelect();
+  populateInitialContaminantSelect();
   bindEvents();
   render();
 }
@@ -1205,6 +1264,27 @@ function bindEvents() {
     render();
   });
 
+  elements.tankLevelMm.addEventListener('input', (event) => {
+    state.tankLevelMm = Number(event.target.value);
+    renderStateBlock();
+    renderResults();
+  });
+
+  elements.initialContaminant.addEventListener('change', (event) => {
+    state.selectedParameter = event.target.value || state.selectedParameter;
+    renderStateBlock();
+    render();
+  });
+
+  elements.initialConcentration.addEventListener('input', (event) => {
+    const value = Number(event.target.value);
+    if (state.selectedParameter) {
+      state.initialConcentrations[state.selectedParameter] = Number.isNaN(value) ? 0 : Math.max(0, value);
+    }
+    renderStateBlock();
+    renderResults();
+  });
+
   elements.initialVolume.addEventListener('input', (event) => {
     state.initialVolume = sanitizeNumber(event.target.value);
     render();
@@ -1259,6 +1339,27 @@ function bindEvents() {
   elements.nextButton.addEventListener('click', () => setActiveScreen(Math.min(elements.screens.length - 1, state.activeScreen + 1)));
   elements.settingsButton.addEventListener('click', () => elements.settingsModal.classList.remove('hidden'));
 
+  [
+    elements.purgeCoolingVolume,
+    elements.purgeCoolingEnabled,
+    elements.purgeRoVolume,
+    elements.purgeRoEnabled,
+    elements.purgeBackwashTotal,
+    elements.purgeBackwashSoftener,
+    elements.purgeBackwashCarbon,
+    elements.purgeBackwashMmf,
+    elements.purgeBackwashWwt,
+  ].forEach((node) => {
+    node.addEventListener('input', () => {
+      renderPurges();
+      renderResults();
+    });
+    node.addEventListener('change', () => {
+      renderPurges();
+      renderResults();
+    });
+  });
+
   elements.openDevModal.addEventListener('click', () => elements.devModal.classList.remove('hidden'));
   elements.closeDevModal.addEventListener('click', () => elements.devModal.classList.add('hidden'));
   elements.closeSettingsModal.addEventListener('click', () => elements.settingsModal.classList.add('hidden'));
@@ -1279,10 +1380,12 @@ function render() {
   renderTaskErrors();
   renderCalcMode();
   populateSingleSelect();
+  renderStateBlock();
   renderReadouts();
   renderAutoPanel();
   renderTaskSpecificLabels();
   renderInputs();
+  renderPurges();
   renderSettings();
   renderResults();
 }
@@ -1410,6 +1513,56 @@ function populateSingleSelect() {
     .map((key) => `<option value="${key}">${key}</option>`)
     .join('');
   elements.singleSelect.value = state.selectedParameter;
+}
+
+function populateInitialContaminantSelect() {
+  const options = [
+    '<option value="">Selecciona un contaminante</option>',
+    ...MULTIPLE_KEYS.map((key) => `<option value="${key}">${key}</option>`),
+  ];
+  elements.initialContaminant.innerHTML = options.join('');
+}
+
+function renderStateBlock() {
+  const isValidLevel = Number.isFinite(state.tankLevelMm) && state.tankLevelMm >= 0;
+  const estimatedVolume = isValidLevel ? state.tankLevelMm * (10 / 166.66) : 0;
+  state.initialVolume = estimatedVolume;
+
+  elements.tankLevelMm.value = state.tankLevelMm || '';
+  elements.estimatedVolume.textContent = formatNumber(estimatedVolume);
+  elements.initialContaminant.value = state.selectedParameter || '';
+  elements.initialConcentration.value = state.selectedParameter
+    ? String(state.initialConcentrations[state.selectedParameter] || 0)
+    : '';
+
+  showBlockError(elements.levelError, isValidLevel ? '' : 'Completa los datos antes de continuar.');
+  showBlockError(
+    elements.concentrationError,
+    !state.selectedParameter ? 'Completa los datos antes de continuar.' : '',
+  );
+}
+
+function renderPurges() {
+  const coolingVolume = sanitizeNumber(elements.purgeCoolingVolume.value || 0);
+  const roVolume = sanitizeNumber(elements.purgeRoVolume.value || 0);
+  const backwashMm =
+    (elements.purgeBackwashTotal.checked ? 1000 : 0) +
+    (elements.purgeBackwashSoftener.checked ? 333 : 0) +
+    (elements.purgeBackwashCarbon.checked ? 333 : 0) +
+    (elements.purgeBackwashMmf.checked ? 333 : 0) +
+    (elements.purgeBackwashWwt.checked ? 500 : 0);
+  const backwashVolume = backwashMm * (10 / 166.66);
+
+  const coolingEnabled = elements.purgeCoolingEnabled.checked;
+  const roEnabled = elements.purgeRoEnabled.checked;
+
+  elements.purgeCoolingInfo.textContent = `${formatNumber(coolingVolume * (166.66 / 10))} mm · ${formatNumber(coolingVolume / 20)} hr`;
+  elements.purgeRoInfo.textContent = `${formatNumber(roVolume * (166.66 / 10))} mm · ${formatNumber(roVolume / 15)} hr`;
+
+  state.coolingVolume =
+    (coolingEnabled ? coolingVolume : 0) +
+    (roEnabled ? roVolume : 0) +
+    backwashVolume;
 }
 
 function renderReadouts() {
