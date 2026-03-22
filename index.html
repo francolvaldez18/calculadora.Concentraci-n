@@ -482,11 +482,36 @@ textarea:focus {
   font-weight: 700;
 }
 
+.state-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
 .nav {
+  width: 100%;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(73,119,153,.25);
   display: flex;
   justify-content: space-between;
-  gap: 12px;
-  margin-top: 12px;
+  align-items: center;
+  gap: 8px;
+}
+
+.nav-right {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  align-items: center;
+}
+
+.nav .btn {
+  height: 40px;
+  min-width: 110px;
+  padding: 0 14px;
+  font-size: 14px;
+  font-weight: 700;
+  border-radius: 12px;
 }
 
 .hidden {
@@ -603,8 +628,7 @@ textarea:focus {
     width: min(188px, 58vw);
   }
 
-  .below-work-row,
-  .nav {
+  .below-work-row {
     display: flex;
     flex-direction: column;
     align-items: stretch;
@@ -623,6 +647,19 @@ textarea:focus {
 
   .tabs {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 860px) {
+  .nav,
+  .nav-right {
+    flex-direction: column;
+  }
+
+  .nav .btn,
+  .nav-right,
+  .nav-right .btn {
+    width: 100%;
   }
 }
 
@@ -771,6 +808,10 @@ textarea:focus {
               <div id="incoming-concentrations" class="grid"></div>
             </article>
           </div>
+
+          <div class="state-actions">
+            <button class="btn" id="btnSettings" type="button">Ajustes</button>
+          </div>
         </section>
 
         <section class="screen" data-screen="3">
@@ -785,51 +826,12 @@ textarea:focus {
           <div class="cards" id="results-cards"></div>
         </section>
 
-        <section class="screen" data-screen="4">
-          <div class="card">
-            <h2 data-i18n="settingsTitle">Ajustes</h2>
-            <div class="grid grid-3">
-              <label class="field">
-                <span data-i18n="safetyFactor">Factor de seguridad</span>
-                <input id="settings-safety-factor" type="number" min="1" step="0.01" />
-              </label>
-              <label class="field">
-                <span data-i18n="operationMode">Modo</span>
-                <select id="settings-operation-mode">
-                  <option value="real">Real</option>
-                  <option value="theoretical">Teórico</option>
-                </select>
-              </label>
-              <label class="field">
-                <span>Umbral advertencia</span>
-                <input id="settings-warning-threshold" type="number" min="0.5" max="1" step="0.01" />
-              </label>
-              <div class="readonly-output" id="settings-order-readout"></div>
-            </div>
+        <div class="nav" id="globalNav">
+          <button class="btn" id="btnHome" type="button">Inicio</button>
+          <div class="nav-right">
+            <button class="btn" id="btnBack" type="button">Volver</button>
+            <button class="btn" id="btnNext" type="button">Siguiente</button>
           </div>
-
-          <div class="grid grid-3">
-            <article class="card">
-              <h2 data-i18n="limitsTitle">Límites máximos (mg/L)</h2>
-              <div id="settings-limits-grid" class="grid"></div>
-            </article>
-
-            <article class="card">
-              <h2 data-i18n="coolingSettingsTitle">Cooling water (mg/L)</h2>
-              <div id="settings-cooling-grid" class="grid"></div>
-            </article>
-
-            <article class="card">
-              <h2 data-i18n="visibleOrderTitle">Orden visible</h2>
-              <div id="settings-order-list" class="metric-chips"></div>
-            </article>
-          </div>
-        </section>
-
-        <div class="nav">
-          <button class="btn" type="button" id="home-button">Home</button>
-          <button class="btn" type="button" id="back-button">Back</button>
-          <button class="btn" type="button" id="next-button">Next</button>
         </div>
       </section>
 
@@ -867,6 +869,50 @@ textarea:focus {
       </div>
     </div>
 
+    <div class="dev-modal hidden" id="settings-modal">
+      <div class="dev-dialog">
+        <h2 data-i18n="settingsTitle">Ajustes</h2>
+        <div class="grid grid-3">
+          <label class="field">
+            <span data-i18n="safetyFactor">Factor de seguridad</span>
+            <input id="settings-safety-factor" type="number" min="1" step="0.01" />
+          </label>
+          <label class="field">
+            <span data-i18n="operationMode">Modo</span>
+            <select id="settings-operation-mode">
+              <option value="real">Real</option>
+              <option value="theoretical">Teórico</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Umbral advertencia</span>
+            <input id="settings-warning-threshold" type="number" min="0.5" max="1" step="0.01" />
+          </label>
+          <div class="readonly-output" id="settings-order-readout"></div>
+        </div>
+
+        <div class="grid grid-3">
+          <article class="card">
+            <h2 data-i18n="limitsTitle">Límites máximos (mg/L)</h2>
+            <div id="settings-limits-grid" class="grid"></div>
+          </article>
+
+          <article class="card">
+            <h2 data-i18n="coolingSettingsTitle">Cooling water (mg/L)</h2>
+            <div id="settings-cooling-grid" class="grid"></div>
+          </article>
+
+          <article class="card">
+            <h2 data-i18n="visibleOrderTitle">Orden visible</h2>
+            <div id="settings-order-list" class="metric-chips"></div>
+          </article>
+        </div>
+        <div class="state-actions">
+          <button class="btn" type="button" id="close-settings-modal">Cerrar</button>
+        </div>
+      </div>
+    </div>
+
     <script>
 const CONTAMINANTS = [
   { key: 'Ba', label: 'Ba', regulatoryLimit: 2 },
@@ -896,7 +942,7 @@ const EXCEL_SOURCE_STATUS = {
 
 const TEXTS = {
   es: {
-    tabs: ['Idioma', 'Tarea', 'Estado', 'Resultados', 'Ajustes'],
+    tabs: ['Idioma', 'Tarea', 'Estado', 'Resultados'],
     welcomeTitle: 'Concentration Calculator - WWT - Utilities',
     welcomeDescription: 'Herramienta para el cálculo y evaluación de concentración de contaminantes en el sistema WWB.',
     selectLanguageText: 'Seleccionar idioma',
@@ -918,7 +964,7 @@ const TEXTS = {
     devButton: 'Developer',
   },
   en: {
-    tabs: ['Language', 'Task', 'State', 'Results', 'Settings'],
+    tabs: ['Language', 'Task', 'State', 'Results'],
     welcomeTitle: 'Concentration Calculator - WWT - Utilities',
     welcomeDescription: 'Tool for calculating and evaluating contaminant concentration in the WWB system.',
     selectLanguageText: 'Select language',
@@ -940,7 +986,7 @@ const TEXTS = {
     devButton: 'Developer',
   },
   ko: {
-    tabs: ['언어', '작업', '상태', '결과', '설정'],
+    tabs: ['언어', '작업', '상태', '결과'],
     welcomeTitle: 'Concentration Calculator - WWT - Utilities',
     welcomeDescription: 'WWB 시스템의 오염물질 농도 계산 및 평가 도구',
     selectLanguageText: '언어 선택',
@@ -1021,12 +1067,15 @@ const elements = {
   settingsOrderList: document.getElementById('settings-order-list'),
   settingsLimitsGrid: document.getElementById('settings-limits-grid'),
   settingsCoolingGrid: document.getElementById('settings-cooling-grid'),
-  homeButton: document.getElementById('home-button'),
-  backButton: document.getElementById('back-button'),
-  nextButton: document.getElementById('next-button'),
+  homeButton: document.getElementById('btnHome'),
+  backButton: document.getElementById('btnBack'),
+  nextButton: document.getElementById('btnNext'),
+  settingsButton: document.getElementById('btnSettings'),
   openDevModal: document.getElementById('developerBtn'),
   closeDevModal: document.getElementById('close-dev-modal'),
   devModal: document.getElementById('dev-modal'),
+  settingsModal: document.getElementById('settings-modal'),
+  closeSettingsModal: document.getElementById('close-settings-modal'),
 };
 
 init();
@@ -1184,11 +1233,16 @@ function bindEvents() {
   elements.homeButton.addEventListener('click', () => setActiveScreen(0));
   elements.backButton.addEventListener('click', () => setActiveScreen(Math.max(0, state.activeScreen - 1)));
   elements.nextButton.addEventListener('click', () => setActiveScreen(Math.min(elements.screens.length - 1, state.activeScreen + 1)));
+  elements.settingsButton.addEventListener('click', () => elements.settingsModal.classList.remove('hidden'));
 
   elements.openDevModal.addEventListener('click', () => elements.devModal.classList.remove('hidden'));
   elements.closeDevModal.addEventListener('click', () => elements.devModal.classList.add('hidden'));
+  elements.closeSettingsModal.addEventListener('click', () => elements.settingsModal.classList.add('hidden'));
   elements.devModal.addEventListener('click', (event) => {
     if (event.target === elements.devModal) elements.devModal.classList.add('hidden');
+  });
+  elements.settingsModal.addEventListener('click', (event) => {
+    if (event.target === elements.settingsModal) elements.settingsModal.classList.add('hidden');
   });
 }
 
@@ -1231,9 +1285,6 @@ function renderI18n() {
     button.classList.toggle('active', button.dataset.lang === state.settings.locale);
   });
 
-  elements.homeButton.textContent = translate('home', 'Home');
-  elements.backButton.textContent = translate('back', 'Back');
-  elements.nextButton.textContent = translate('next', 'Next');
 }
 
 function setActiveScreen(index) {
@@ -1249,6 +1300,7 @@ function renderScreenState() {
   elements.backButton.disabled = state.activeScreen === 0;
   elements.nextButton.disabled = state.activeScreen === elements.screens.length - 1;
   elements.nav.classList.toggle('hidden', state.activeScreen === 0);
+  elements.tabs.classList.toggle('hidden', state.activeScreen === 0);
 }
 
 function renderModeButtons() {
