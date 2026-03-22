@@ -390,6 +390,14 @@ textarea:focus {
   transition: all 0.2s ease;
 }
 
+.choice-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+  background: rgba(210, 220, 230, 0.7);
+  color: var(--text-secondary);
+  border-color: rgba(138, 170, 201, 0.5);
+}
+
 .choice-button.active {
   background: linear-gradient(180deg, #0d6eaa, #0b5c8f);
   color: #fff;
@@ -1273,7 +1281,7 @@ function bindEvents() {
 
   elements.inputModeSelector.addEventListener('click', (event) => {
     const button = event.target.closest('[data-input-mode]');
-    if (!button) return;
+    if (!button || button.disabled) return;
     state.inputMode = button.dataset.inputMode;
     render();
   });
@@ -1512,12 +1520,15 @@ function renderScreenState() {
 }
 
 function renderModeButtons() {
+  const automaticButton = elements.inputModeSelector.querySelector('[data-input-mode="automatic"]');
   if (state.calculationMode === 'single') {
     state.inputMode = 'manual';
   }
   toggleActiveButton(elements.calcModeSelector, 'mode', state.calculationMode);
   toggleActiveButton(elements.inputModeSelector, 'inputMode', state.inputMode);
-  elements.inputModeSelectorWrap.classList.toggle('hidden', state.calculationMode === 'single');
+  if (automaticButton) {
+    automaticButton.disabled = state.calculationMode === 'single';
+  }
   elements.singleModeNotice.classList.toggle('hidden', state.calculationMode !== 'single');
   if (elements.singleParameterField) {
     elements.singleParameterField.classList.toggle('hidden', state.calculationMode !== 'single');
