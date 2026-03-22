@@ -938,6 +938,11 @@ textarea:focus {
         </section>
 
         <section class="screen" data-screen="3">
+          <div class="top-row">
+            <h3>Caracterización del efluente</h3>
+            <button class="btn" id="settingsBtnEffluent" type="button">⚙️ Ajustes</button>
+          </div>
+
           <div id="calcSingle" class="calc-mode-block"></div>
           <div id="calcMultiple" class="calc-mode-block"></div>
           <div id="calcIBC" class="calc-mode-block"></div>
@@ -1304,6 +1309,7 @@ const elements = {
   backButton: document.getElementById('btnBack'),
   nextButton: document.getElementById('btnNext'),
   settingsButton: document.getElementById('settingsBtn'),
+  settingsButtonEffluent: document.getElementById('settingsBtnEffluent'),
   openDevModal: document.getElementById('developerBtn'),
   closeDevModal: document.getElementById('close-dev-modal'),
   devModal: document.getElementById('dev-modal'),
@@ -1538,6 +1544,7 @@ function bindEvents() {
   elements.backButton.addEventListener('click', () => setActiveScreen(Math.max(0, state.activeScreen - 1)));
   elements.nextButton.addEventListener('click', () => setActiveScreen(Math.min(elements.screens.length - 1, state.activeScreen + 1)));
   elements.settingsButton.addEventListener('click', () => elements.settingsModal.classList.remove('hidden'));
+  elements.settingsButtonEffluent.addEventListener('click', () => elements.settingsModal.classList.remove('hidden'));
 
   [
     elements.purgeCoolingVolume,
