@@ -1026,15 +1026,8 @@ textarea:focus {
         </section>
 
         <section class="screen" data-screen="5">
-          <div class="cards">
-            <article class="card">
-              <h2 data-i18n="resultsTitle">Evaluación operativa</h2>
-              <div class="metric-chips" id="headline-metrics"></div>
-              <div id="validation-messages"></div>
-            </article>
-          </div>
-
-          <div class="cards" id="results-cards"></div>
+          <div id="validation-messages"></div>
+          <div class="grid" id="results-cards"></div>
         </section>
 
         <div class="nav hidden" id="globalNav">
@@ -2013,26 +2006,26 @@ function renderResults() {
   elements.validationMessages.innerHTML = validations
     .map((message) => `<div class="${message.type === 'error' ? 'error' : 'notice'}">${message.text}</div>`)
     .join('');
-  elements.headlineMetrics.innerHTML = renderHeadlineMetrics(results);
-  elements.resultsCards.innerHTML = results.map(renderResultCard).join('');
+  if (elements.headlineMetrics) {
+    elements.headlineMetrics.innerHTML = '';
+  }
+  elements.resultsCards.innerHTML = renderOperationalSummary(results);
 }
 
-function renderHeadlineMetrics(results) {
-  const statusCount = {
-    ok: results.filter((item) => item.status.tone === 'ok').length,
-    warning: results.filter((item) => item.status.tone === 'warning').length,
-    danger: results.filter((item) => item.status.tone === 'danger').length,
-  };
-
-  const maxFinal = results.reduce((acc, item) => Math.max(acc, item.finalConcentration ?? 0), 0);
-  const maxVolume = results.reduce((acc, item) => Math.max(acc, item.finalVolume ?? 0), 0);
+function renderOperationalSummary(results) {
+  if (!results.length) return '';
+  const preferredKey = state.incomingContaminantKey || state.initialContaminantKey || state.selectedParameter;
+  const result = results.find((item) => item.item.key === preferredKey) || results[0];
+  const elementLabel = result.item.key;
+  const initialHeight = state.tankLevelMm;
+  const mixVolume = state.initialVolume + getIncomingVolume();
+  const mixHeight = mixVolume * (166.66 / 10);
+  const finalHeight = result.finalVolume * (166.66 / 10);
 
   return [
-    metricChip('OK', String(statusCount.ok), 'ok'),
-    metricChip('Advertencia', String(statusCount.warning), statusCount.warning ? 'warning' : 'info'),
-    metricChip('Excede', String(statusCount.danger), statusCount.danger ? 'danger' : 'info'),
-    metricChip('C final máx', `${formatNumber(maxFinal)} mg/L`, 'info'),
-    metricChip('V final', `${formatNumber(maxVolume)} m³`, 'info'),
+    renderOperationalCard('Estado inicial', initialHeight, state.initialVolume, state.initialConcentrations[result.item.key] || 0, elementLabel),
+    renderOperationalCard('Mezcla (+Efluente)', mixHeight, mixVolume, result.afterIncomingConcentration, elementLabel),
+    renderOperationalCard('Estado final (Purga + Efluente)', finalHeight, result.finalVolume, result.finalConcentration, elementLabel),
   ].join('');
 }
 
@@ -2120,33 +2113,23 @@ function evaluateStatus(finalConcentration, warningLimit, operativeLimit) {
   return { label: 'OK', tone: 'ok' };
 }
 
-function renderResultCard(result) {
-  const limitLabel = result.operativeLimit === null ? 'No definido' : `${formatNumber(result.operativeLimit)} mg/L`;
-  const regulatoryLabel = result.regulatoryLimit === null ? 'No definido' : `${formatNumber(result.regulatoryLimit)} mg/L`;
-  const warningLabel = result.warningLimit === null ? 'No definido' : `${formatNumber(result.warningLimit)} mg/L`;
-  const marginLabel = result.margin === null ? 'N/A' : `${formatSignedNumber(result.margin)} mg/L`;
-  const finalConcentrationLabel = result.finalConcentration === null ? 'No calculable (Vf = 0)' : `${formatNumber(result.finalConcentration)} mg/L`;
-
+function renderOperationalCard(title, height, volume, concentration, elementLabel) {
   return `
     <article class="card">
-      <div class="result-card-header">
-        <h2>${result.item.label}</h2>
-        <span class="status-pill ${result.status.tone}">${result.status.label}</span>
-      </div>
-      <div class="result-grid">
-        ${readonlyOutput('Concentración inicial', `${formatNumber(state.initialConcentrations[result.item.key] || 0)} mg/L`)}
-        ${readonlyOutput('Concentración ingreso', `${formatNumber(result.incomingRawConcentration)} mg/L`)}
-        ${readonlyOutput('Concentración corregida', `${formatNumber(result.incomingCorrectedConcentration)} mg/L`)}
-        ${readonlyOutput('Masa inicial', `${formatNumber(result.initialMass)}`)}
-        ${readonlyOutput('Masa agregada', `${formatNumber(result.incomingMass)}`)}
-        ${readonlyOutput('Masa final', `${formatNumber(result.finalMass)}`)}
-        ${readonlyOutput('Volumen final', `${formatNumber(result.finalVolume)} m³`)}
-        ${readonlyOutput('C luego del ingreso', result.afterIncomingConcentration === null ? 'No calculable' : `${formatNumber(result.afterIncomingConcentration)} mg/L`)}
-        ${readonlyOutput('Concentración final', finalConcentrationLabel)}
-        ${readonlyOutput('Límite regulatorio', regulatoryLabel)}
-        ${readonlyOutput('Límite operativo', limitLabel)}
-        ${readonlyOutput('Umbral advertencia', warningLabel)}
-        ${readonlyOutput('Margen disponible', marginLabel)}
+      <h3>${title}</h3>
+      <div class="grid grid-3">
+        <div class="field">
+          <label>Altura (mm)</label>
+          <button class="readonly-output" type="button" disabled>${formatHeight(height)}</button>
+        </div>
+        <div class="field">
+          <label>Volumen (m³)</label>
+          <button class="readonly-output" type="button" disabled>${formatVolume(volume)}</button>
+        </div>
+        <div class="field">
+          <label>Concentración (${elementLabel} mg/L)</label>
+          <button class="readonly-output" type="button" disabled>${formatConcentration(concentration)}</button>
+        </div>
       </div>
     </article>
   `;
@@ -2211,6 +2194,21 @@ function getContaminant(key) {
 
 function formatNumber(value) {
   return Number(value).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 4 });
+}
+
+function formatHeight(value) {
+  if (value === null || value === undefined || Number.isNaN(value)) return '--';
+  return Number(value).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 1 });
+}
+
+function formatVolume(value) {
+  if (value === null || value === undefined || Number.isNaN(value)) return '--';
+  return `${Number(value).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+function formatConcentration(value) {
+  if (value === null || value === undefined || Number.isNaN(value)) return '--';
+  return `${Number(value).toLocaleString('es-AR', { minimumFractionDigits: 4, maximumFractionDigits: 4 })}`;
 }
 
 function formatDurationHoursMinutes(hoursValue) {
