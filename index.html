@@ -487,8 +487,17 @@ textarea:focus {
 
 .purge-option {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 8px;
+}
+
+.purge-inline-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: end;
+}
+
+.purge-options-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .choice-button.active {
@@ -825,6 +834,8 @@ textarea:focus {
 @media (max-width: 980px) {
   .cards,
   .purges-grid,
+  .purge-inline-grid,
+  .purge-options-grid,
   .state-grid,
   .grid-3,
   .result-grid,
@@ -1046,25 +1057,43 @@ textarea:focus {
           <div class="grid purges-grid">
             <article class="card">
               <label class="purge-toggle"><input id="purgeCoolingEnabled" type="checkbox" checked /> Cooling water</label>
-              <label class="field">
-                <span>Volumen (m³)</span>
-                <input id="purgeCoolingVolume" type="number" min="0" step="0.01" value="10" />
-              </label>
-              <div class="readonly-output" id="purgeCoolingInfo"></div>
+              <div class="grid purge-inline-grid">
+                <label class="field">
+                  <span>Volumen (m³)</span>
+                  <input id="purgeCoolingVolume" type="number" min="0" step="0.01" value="10" />
+                </label>
+                <div class="field">
+                  <span>Altura (mm)</span>
+                  <div class="readonly-output" id="purgeCoolingMmInfo"></div>
+                </div>
+                <div class="field">
+                  <span>Tiempo</span>
+                  <div class="readonly-output" id="purgeCoolingTimeInfo"></div>
+                </div>
+              </div>
             </article>
 
             <article class="card">
               <label class="purge-toggle"><input id="purgeRoEnabled" type="checkbox" /> RO Concentrate</label>
-              <label class="field">
-                <span>Volumen (m³)</span>
-                <input id="purgeRoVolume" type="number" min="0" step="0.01" value="0" />
-              </label>
-              <div class="readonly-output" id="purgeRoInfo"></div>
+              <div class="grid purge-inline-grid">
+                <label class="field">
+                  <span>Volumen (m³)</span>
+                  <input id="purgeRoVolume" type="number" min="0" step="0.01" value="0" />
+                </label>
+                <div class="field">
+                  <span>Altura (mm)</span>
+                  <div class="readonly-output" id="purgeRoMmInfo"></div>
+                </div>
+                <div class="field">
+                  <span>Tiempo</span>
+                  <div class="readonly-output" id="purgeRoTimeInfo"></div>
+                </div>
+              </div>
             </article>
 
             <article class="card purge-card-wide">
               <h2>Backwashing</h2>
-              <div class="grid">
+              <div class="grid purge-options-grid">
                 <label class="purge-option"><input id="purgeBackwashTotal" type="checkbox" /> <span>Backwashing Train - Soft Water Total (+1000 mm)</span></label>
                 <label class="purge-option"><input id="purgeBackwashSoftener" type="checkbox" /> <span>Solo Softener (+333 mm)</span></label>
                 <label class="purge-option"><input id="purgeBackwashCarbon" type="checkbox" /> <span>Solo Carbon Activado (+333 mm)</span></label>
@@ -1367,10 +1396,12 @@ const elements = {
   closeSummaryModal: document.getElementById('close-summary-modal'),
   purgeCoolingVolume: document.getElementById('purgeCoolingVolume'),
   purgeCoolingEnabled: document.getElementById('purgeCoolingEnabled'),
-  purgeCoolingInfo: document.getElementById('purgeCoolingInfo'),
+  purgeCoolingMmInfo: document.getElementById('purgeCoolingMmInfo'),
+  purgeCoolingTimeInfo: document.getElementById('purgeCoolingTimeInfo'),
   purgeRoVolume: document.getElementById('purgeRoVolume'),
   purgeRoEnabled: document.getElementById('purgeRoEnabled'),
-  purgeRoInfo: document.getElementById('purgeRoInfo'),
+  purgeRoMmInfo: document.getElementById('purgeRoMmInfo'),
+  purgeRoTimeInfo: document.getElementById('purgeRoTimeInfo'),
   purgeBackwashTotal: document.getElementById('purgeBackwashTotal'),
   purgeBackwashSoftener: document.getElementById('purgeBackwashSoftener'),
   purgeBackwashCarbon: document.getElementById('purgeBackwashCarbon'),
@@ -1966,8 +1997,10 @@ function renderPurges() {
   const coolingEnabled = elements.purgeCoolingEnabled.checked;
   const roEnabled = elements.purgeRoEnabled.checked;
 
-  elements.purgeCoolingInfo.textContent = `${formatNumber(coolingVolume * (166.66 / 10))} mm · ${formatDurationHoursMinutes(coolingVolume / 20)}`;
-  elements.purgeRoInfo.textContent = `${formatNumber(roVolume * (166.66 / 10))} mm · ${formatDurationHoursMinutes(roVolume / 15)}`;
+  elements.purgeCoolingMmInfo.textContent = `${formatNumber(coolingVolume * (166.66 / 10))} mm`;
+  elements.purgeCoolingTimeInfo.textContent = formatDurationHoursMinutes(coolingVolume / 20);
+  elements.purgeRoMmInfo.textContent = `${formatNumber(roVolume * (166.66 / 10))} mm`;
+  elements.purgeRoTimeInfo.textContent = formatDurationHoursMinutes(roVolume / 15);
 
   state.coolingVolume =
     (coolingEnabled ? coolingVolume : 0) +
