@@ -204,7 +204,6 @@ button {
 
 .welcome-main h2,
 .hero-card h1,
-.card h2,
 .dev-dialog h2 {
   margin: 0 0 10px;
   color: var(--text-primary);
@@ -212,10 +211,21 @@ button {
   line-height: 1.2;
 }
 
+.screen:not(#screen-language) h2,
+.screen:not(#screen-language) h3,
+.screen:not(#screen-language) h4,
+#settings-modal h2,
+#summary-modal h2 {
+  margin: 0 0 8px;
+  color: var(--text-primary);
+  font-size: 16px;
+  line-height: 1.2;
+}
+
 .card h3 {
   margin: 0 0 8px;
   color: var(--text-primary);
-  font-size: 18px;
+  font-size: 16px;
   line-height: 1.2;
 }
 
@@ -607,13 +617,21 @@ textarea:focus {
 }
 
 .flag-img {
-  width: 48px;
-  height: 32px;
+  width: min(86px, 19vw);
+  height: auto;
   object-fit: cover;
   border-radius: 8px;
   border: 1px solid var(--border);
   background: #fff;
   box-shadow: 0 6px 14px rgba(18, 56, 93, 0.08);
+}
+
+.summary-plain {
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
+  line-height: 1.35;
+  color: var(--text-primary);
 }
 
 .developer-launch {
@@ -647,7 +665,7 @@ textarea:focus {
 
 .top-row h3 {
   margin: 0;
-  font-size: 20px;
+  font-size: 16px;
   line-height: 1.2;
   color: var(--text-primary);
 }
@@ -2180,44 +2198,30 @@ function renderSummaryModalContent() {
   if (!data) return '<div class="notice">No hay datos suficientes para generar el resumen.</div>';
   const cpShown = state.settings.operationMode === 'real' ? applySafetyFactor(data.cpBase) : data.cpBase;
   return `
-    <article class="card">
-      <h3>Estado inicial</h3>
-      <div class="metric-chips result-triple-grid">
-        ${metricChip('Altura (mm)', formatHeight2(data.h0))}
-        ${metricChip('Volumen (m³)', formatVolume(data.v0))}
-        ${metricChip(`Concentración inicial (${data.elementLabel} mg/L)`, formatConcentration(data.c0))}
-      </div>
-    </article>
-    <article class="card">
-      <h3>Mezcla (+Efluente)</h3>
-      <div class="metric-chips result-triple-grid">
-        ${metricChip('Altura (mm)', formatHeight2(data.h1))}
-        ${metricChip('Volumen (m³)', formatVolume(data.v1))}
-        ${metricChip(`Concentración (${data.elementLabel} mg/L)`, formatConcentration(data.c1))}
-      </div>
-    </article>
-    <article class="card">
-      <h3>Estado final (Purga + Efluente)</h3>
-      <div class="metric-chips result-triple-grid">
-        ${metricChip('Altura (mm)', formatHeight2(data.h2))}
-        ${metricChip('Volumen (m³)', formatVolume(data.v2))}
-        ${metricChip(`Concentración (${data.elementLabel} mg/L)`, formatConcentration(data.c2))}
-      </div>
-    </article>
-    <article class="card">
-      <h3>Parámetros usados</h3>
-      <div class="grid">
-        <div class="readonly-output">Modo de cálculo: ${state.calculationMode || '--'}</div>
-        <div class="readonly-output">Modo de carga: ${state.inputMode || '--'}</div>
-        <div class="readonly-output">Contaminante: ${data.elementLabel}</div>
-        <div class="readonly-output">Volumen de efluente: ${formatVolume(data.ve)} m³</div>
-        <div class="readonly-output">Concentración de efluente: ${formatConcentration(data.ce)} mg/L</div>
-        <div class="readonly-output">Volumen de purga / cooling water: ${formatVolume(data.vp)} m³</div>
-        <div class="readonly-output">Concentración de purga / cooling water: ${formatConcentration(cpShown)} mg/L</div>
-        <div class="readonly-output">Modo teórico o real: ${state.settings.operationMode}</div>
-        <div class="readonly-output">Factor de seguridad: ${state.settings.operationMode === 'real' ? formatNumber(state.settings.safetyFactor) : 'No aplica'}</div>
-      </div>
-    </article>
+    <div class="summary-plain">
+      <div>Estado inicial</div>
+      <div>Altura (mm): ${formatHeight2(data.h0)}</div>
+      <div>Volumen (m³): ${formatVolume(data.v0)}</div>
+      <div>Concentración inicial (${data.elementLabel} mg/L): ${formatConcentration(data.c0)}</div>
+      <div>Mezcla (+Efluente)</div>
+      <div>Altura (mm): ${formatHeight2(data.h1)}</div>
+      <div>Volumen (m³): ${formatVolume(data.v1)}</div>
+      <div>Concentración (${data.elementLabel} mg/L): ${formatConcentration(data.c1)}</div>
+      <div>Estado final (Purga + Efluente)</div>
+      <div>Altura (mm): ${formatHeight2(data.h2)}</div>
+      <div>Volumen (m³): ${formatVolume(data.v2)}</div>
+      <div>Concentración final (${data.elementLabel} mg/L): ${formatConcentration(data.c2)}</div>
+      <div>Parámetros</div>
+      <div>Modo de cálculo: ${state.calculationMode || '--'}</div>
+      <div>Modo de carga: ${state.inputMode || '--'}</div>
+      <div>Elemento: ${data.elementLabel}</div>
+      <div>Volumen de efluente: ${formatVolume(data.ve)} m³</div>
+      <div>Concentración de efluente: ${formatConcentration(data.ce)} mg/L</div>
+      <div>Volumen de purga / cooling water: ${formatVolume(data.vp)} m³</div>
+      <div>Concentración de purga / cooling water: ${formatConcentration(cpShown)} mg/L</div>
+      <div>Modo teórico o real: ${state.settings.operationMode}</div>
+      <div>Factor de seguridad: ${state.settings.operationMode === 'real' ? formatNumber(state.settings.safetyFactor) : 'No aplica'}</div>
+    </div>
   `;
 }
 
