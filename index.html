@@ -267,7 +267,26 @@ textarea:focus {
   border-color: rgba(11, 92, 171, 0.46);
 }
 
-.readonly-output,
+.readonly-output {
+  border: none;
+  border-radius: 12px;
+  padding: .68rem .9rem;
+  font-size: .84rem;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(180deg, #1285cb, #0d6eaa);
+  width: 100%;
+  text-align: left;
+  box-shadow: 0 8px 16px rgba(9,58,99,.2);
+  opacity: .9;
+}
+
+.readonly-output:disabled {
+  cursor: default;
+  opacity: 1;
+  color: #fff;
+}
+
 .notice,
 .error {
   border-radius: 12px;
@@ -438,7 +457,7 @@ textarea:focus {
 }
 
 .field-note {
-  margin-top: 0;
+  margin-top: 12px;
 }
 
 .purges-grid {
@@ -1065,6 +1084,7 @@ textarea:focus {
           <button class="btn" id="btnHome" type="button">Inicio</button>
           <div class="nav-right">
             <button class="btn" id="btnBack" type="button">Volver</button>
+            <button class="btn btn-summary hidden" id="btnSummary" type="button">Resumen</button>
             <button class="btn" id="btnNext" type="button">Siguiente</button>
           </div>
         </div>
@@ -1141,6 +1161,17 @@ textarea:focus {
         </div>
         <div class="state-actions">
           <button class="btn" type="button" id="close-settings-modal">Cerrar</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="dev-modal hidden" id="summary-modal">
+      <div class="dev-dialog">
+        <h2>Resumen de cálculo</h2>
+        <div id="summary-content" class="grid"></div>
+        <div class="state-actions">
+          <button class="btn" type="button" id="copy-summary-btn">Copiar</button>
+          <button class="btn" type="button" id="close-summary-modal">Cerrar</button>
         </div>
       </div>
     </div>
@@ -1322,6 +1353,7 @@ const elements = {
   homeButton: document.getElementById('btnHome'),
   backButton: document.getElementById('btnBack'),
   nextButton: document.getElementById('btnNext'),
+  summaryButton: document.getElementById('btnSummary'),
   settingsButton: document.getElementById('settingsBtn'),
   settingsButtonEffluent: document.getElementById('settingsBtnEffluent'),
   openDevModal: document.getElementById('developerBtn'),
@@ -1329,6 +1361,10 @@ const elements = {
   devModal: document.getElementById('dev-modal'),
   settingsModal: document.getElementById('settings-modal'),
   closeSettingsModal: document.getElementById('close-settings-modal'),
+  summaryModal: document.getElementById('summary-modal'),
+  summaryContent: document.getElementById('summary-content'),
+  copySummaryButton: document.getElementById('copy-summary-btn'),
+  closeSummaryModal: document.getElementById('close-summary-modal'),
   purgeCoolingVolume: document.getElementById('purgeCoolingVolume'),
   purgeCoolingEnabled: document.getElementById('purgeCoolingEnabled'),
   purgeCoolingInfo: document.getElementById('purgeCoolingInfo'),
@@ -1546,6 +1582,10 @@ function bindEvents() {
   elements.homeButton.addEventListener('click', () => setActiveScreen(0));
   elements.backButton.addEventListener('click', () => setActiveScreen(Math.max(0, state.activeScreen - 1)));
   elements.nextButton.addEventListener('click', () => setActiveScreen(Math.min(elements.screens.length - 1, state.activeScreen + 1)));
+  elements.summaryButton.addEventListener('click', () => {
+    elements.summaryContent.innerHTML = renderSummaryModalContent();
+    elements.summaryModal.classList.remove('hidden');
+  });
   elements.settingsButton.addEventListener('click', () => elements.settingsModal.classList.remove('hidden'));
   elements.settingsButtonEffluent.addEventListener('click', () => elements.settingsModal.classList.remove('hidden'));
 
@@ -1573,11 +1613,23 @@ function bindEvents() {
   elements.openDevModal.addEventListener('click', () => elements.devModal.classList.remove('hidden'));
   elements.closeDevModal.addEventListener('click', () => elements.devModal.classList.add('hidden'));
   elements.closeSettingsModal.addEventListener('click', () => elements.settingsModal.classList.add('hidden'));
+  elements.closeSummaryModal.addEventListener('click', () => elements.summaryModal.classList.add('hidden'));
+  elements.copySummaryButton.addEventListener('click', async () => {
+    const summaryText = buildSummaryPlainText();
+    try {
+      await navigator.clipboard.writeText(summaryText);
+    } catch {
+      // no-op en entornos sin clipboard
+    }
+  });
   elements.devModal.addEventListener('click', (event) => {
     if (event.target === elements.devModal) elements.devModal.classList.add('hidden');
   });
   elements.settingsModal.addEventListener('click', (event) => {
     if (event.target === elements.settingsModal) elements.settingsModal.classList.add('hidden');
+  });
+  elements.summaryModal.addEventListener('click', (event) => {
+    if (event.target === elements.summaryModal) elements.summaryModal.classList.add('hidden');
   });
 }
 
@@ -1717,6 +1769,8 @@ function renderScreenState() {
   });
   elements.backButton.disabled = state.activeScreen === 0;
   elements.nextButton.disabled = state.activeScreen === elements.screens.length - 1;
+  elements.nextButton.classList.toggle('hidden', state.activeScreen === elements.screens.length - 1);
+  elements.summaryButton.classList.toggle('hidden', state.activeScreen !== elements.screens.length - 1);
   elements.nav.classList.toggle('hidden', state.activeScreen === 0);
   elements.tabs.classList.toggle('hidden', state.activeScreen === 0);
 }
@@ -1743,6 +1797,9 @@ function renderModeButtons() {
       state.incomingVolume = 1;
       elements.incomingVolume.value = '1';
     }
+  }
+  if (elements.incomingContaminant) {
+    elements.incomingContaminant.disabled = state.calculationMode === 'ibc';
   }
 }
 
@@ -2064,6 +2121,101 @@ function renderOperationalSummary(results) {
   ].join('');
 }
 
+function getCurrentSummaryData() {
+  const results = getVisibleContaminants().map(calculateContaminantResult);
+  if (!results.length) return null;
+  const preferredKey = state.incomingContaminantKey || state.initialContaminantKey || state.selectedParameter;
+  const result = results.find((item) => item.item.key === preferredKey) || results[0];
+  const elementLabel = result.item.key;
+  const h0 = state.tankLevelMm;
+  const v0 = state.initialVolume;
+  const c0 = state.initialConcentrations[result.item.key] || 0;
+  const ve = getIncomingVolume();
+  const ce = state.incomingConcentrations[result.item.key] || 0;
+  const vp = state.coolingVolume;
+  const cpBase = state.settings.coolingComposition[result.item.key] || 0;
+  const c1 = result.afterIncomingConcentration;
+  const c2 = result.finalConcentration;
+  const v1 = v0 + ve;
+  const h1 = v1 * (166.66 / 10);
+  const v2 = result.finalVolume;
+  const h2 = v2 * (166.66 / 10);
+  return { elementLabel, h0, v0, c0, h1, v1, c1, h2, v2, c2, ve, ce, vp, cpBase };
+}
+
+function renderSummaryModalContent() {
+  const data = getCurrentSummaryData();
+  if (!data) return '<div class="notice">No hay datos suficientes para generar el resumen.</div>';
+  const cpShown = state.settings.operationMode === 'real' ? applySafetyFactor(data.cpBase) : data.cpBase;
+  return `
+    <article class="card">
+      <h3>Estado inicial</h3>
+      <div class="metric-chips result-triple-grid">
+        ${metricChip('Altura (mm)', formatHeight2(data.h0))}
+        ${metricChip('Volumen (m³)', formatVolume(data.v0))}
+        ${metricChip(`Concentración inicial (${data.elementLabel} mg/L)`, formatConcentration(data.c0))}
+      </div>
+    </article>
+    <article class="card">
+      <h3>Mezcla (+Efluente)</h3>
+      <div class="metric-chips result-triple-grid">
+        ${metricChip('Altura (mm)', formatHeight2(data.h1))}
+        ${metricChip('Volumen (m³)', formatVolume(data.v1))}
+        ${metricChip(`Concentración (${data.elementLabel} mg/L)`, formatConcentration(data.c1))}
+      </div>
+    </article>
+    <article class="card">
+      <h3>Estado final (Purga + Efluente)</h3>
+      <div class="metric-chips result-triple-grid">
+        ${metricChip('Altura (mm)', formatHeight2(data.h2))}
+        ${metricChip('Volumen (m³)', formatVolume(data.v2))}
+        ${metricChip(`Concentración (${data.elementLabel} mg/L)`, formatConcentration(data.c2))}
+      </div>
+    </article>
+    <article class="card">
+      <h3>Parámetros usados</h3>
+      <div class="grid">
+        <div class="readonly-output">Modo de cálculo: ${state.calculationMode || '--'}</div>
+        <div class="readonly-output">Modo de carga: ${state.inputMode || '--'}</div>
+        <div class="readonly-output">Contaminante: ${data.elementLabel}</div>
+        <div class="readonly-output">Volumen de efluente: ${formatVolume(data.ve)} m³</div>
+        <div class="readonly-output">Concentración de efluente: ${formatConcentration(data.ce)} mg/L</div>
+        <div class="readonly-output">Volumen de purga / cooling water: ${formatVolume(data.vp)} m³</div>
+        <div class="readonly-output">Concentración de purga / cooling water: ${formatConcentration(cpShown)} mg/L</div>
+        <div class="readonly-output">Modo teórico o real: ${state.settings.operationMode}</div>
+        <div class="readonly-output">Factor de seguridad: ${state.settings.operationMode === 'real' ? formatNumber(state.settings.safetyFactor) : 'No aplica'}</div>
+      </div>
+    </article>
+  `;
+}
+
+function buildSummaryPlainText() {
+  const data = getCurrentSummaryData();
+  if (!data) return 'No hay datos suficientes para generar el resumen.';
+  const cpShown = state.settings.operationMode === 'real' ? applySafetyFactor(data.cpBase) : data.cpBase;
+  return [
+    'Resumen de cálculo',
+    `Estado inicial - Altura (mm): ${formatHeight2(data.h0)}`,
+    `Estado inicial - Volumen (m³): ${formatVolume(data.v0)}`,
+    `Estado inicial - Concentración inicial (${data.elementLabel} mg/L): ${formatConcentration(data.c0)}`,
+    `Mezcla (+Efluente) - Altura (mm): ${formatHeight2(data.h1)}`,
+    `Mezcla (+Efluente) - Volumen (m³): ${formatVolume(data.v1)}`,
+    `Mezcla (+Efluente) - Concentración luego de mezcla: ${formatConcentration(data.c1)}`,
+    `Estado final (Purga + Efluente) - Altura (mm): ${formatHeight2(data.h2)}`,
+    `Estado final (Purga + Efluente) - Volumen (m³): ${formatVolume(data.v2)}`,
+    `Estado final (Purga + Efluente) - Concentración final: ${formatConcentration(data.c2)}`,
+    `Modo de cálculo: ${state.calculationMode || '--'}`,
+    `Modo de carga: ${state.inputMode || '--'}`,
+    `Contaminante: ${data.elementLabel}`,
+    `Volumen de efluente: ${formatVolume(data.ve)} m³`,
+    `Concentración de efluente: ${formatConcentration(data.ce)} mg/L`,
+    `Volumen de purga / cooling water: ${formatVolume(data.vp)} m³`,
+    `Concentración de purga / cooling water: ${formatConcentration(cpShown)} mg/L`,
+    `Modo teórico o real: ${state.settings.operationMode}`,
+    `Factor de seguridad: ${state.settings.operationMode === 'real' ? formatNumber(state.settings.safetyFactor) : 'No aplica'}`,
+  ].join('\n');
+}
+
 function calculateContaminantResult(item) {
   const incomingVolume = getIncomingVolume();
   const initialConcentration = state.initialConcentrations[item.key] || 0;
@@ -2156,7 +2308,9 @@ function readonlyOutput(label, value) {
 }
 
 function metricChip(label, value, tone = 'info') {
-  return `<div class="metric-chip ${tone}">${label}<b>${value}</b></div>`;
+  const color = getElementPastelColor(label);
+  const style = color ? ` style="background:${color};"` : '';
+  return `<div class="metric-chip ${tone}"${style}>${label}<b>${value}</b></div>`;
 }
 
 function validateState() {
@@ -2174,10 +2328,29 @@ function validateState() {
   if (state.initialVolume + getIncomingVolume() + state.coolingVolume === 0) {
     messages.push({ type: 'error', text: 'El volumen final total es 0. La concentración no puede calcularse.' });
   }
-  if (state.calculationMode === 'ibc') {
-    messages.push({ type: 'notice', text: 'Modo IBC activo: el ingreso queda fijado en 1 m³ y usa la misma secuencia de balance con criterios operativos propios preparados para ampliación.' });
-  }
   return messages;
+}
+
+const ELEMENT_PASTEL_COLORS = {
+  Ba: '#cfe2ff',
+  Al: '#e2e3e5',
+  P: '#fff3cd',
+  Fe: '#f8d7da',
+  Ni: '#d1ecf1',
+  Cu: '#d4edda',
+  Zn: '#e7e1ff',
+  Pb: '#dee2e6',
+  Cr: '#ffe5d9',
+  Mn: '#f5e6cc',
+  Co: '#e2d9f3',
+  B: '#e6fffa',
+  Cd: '#f8d7da',
+};
+
+function getElementPastelColor(label) {
+  const match = String(label).match(/\(([A-Za-z]+)\s+mg\/L\)/);
+  const elementKey = match ? match[1] : null;
+  return elementKey ? ELEMENT_PASTEL_COLORS[elementKey] : null;
 }
 
 function getIncomingVolume() {
@@ -2212,6 +2385,11 @@ function formatNumber(value) {
 function formatHeight(value) {
   if (value === null || value === undefined || Number.isNaN(value)) return '--';
   return Number(value).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 1 });
+}
+
+function formatHeight2(value) {
+  if (value === null || value === undefined || Number.isNaN(value)) return '--';
+  return Number(value).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function formatVolume(value) {
