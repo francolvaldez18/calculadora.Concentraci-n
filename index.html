@@ -126,12 +126,12 @@ button {
 .tab {
   border: 1px solid var(--border);
   border-radius: 8px;
-  height: 38px;
-  padding: 0 14px;
+  height: 29px;
+  padding: 0 10px;
   background: rgba(255, 255, 255, 0.78);
   color: var(--text-secondary);
   text-align: center;
-  font-size: 14px;
+  font-size: 11px;
   line-height: 1.2;
   font-weight: 700;
 }
@@ -366,7 +366,7 @@ textarea:focus {
 
 .task-card {
   display: grid;
-  gap: 12px;
+  gap: 8px;
 }
 
 .calc-mode-block {
@@ -508,6 +508,20 @@ textarea:focus {
   align-items: end;
 }
 
+.purge-inline-grid .field {
+  grid-template-rows: auto 36px;
+  align-content: start;
+}
+
+.purge-inline-grid .readonly-output {
+  height: 36px;
+  padding: 0 10px;
+  text-align: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .purge-options-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
@@ -557,6 +571,21 @@ textarea:focus {
 
 .metric-chip.info {
   border-color: rgba(11, 92, 171, 0.26);
+}
+
+.metric-chip.concentration-safe {
+  background: rgba(31, 138, 84, 0.16);
+  border-color: rgba(31, 138, 84, 0.45);
+}
+
+.metric-chip.concentration-warn {
+  background: rgba(211, 138, 31, 0.18);
+  border-color: rgba(211, 138, 31, 0.5);
+}
+
+.metric-chip.concentration-danger {
+  background: rgba(199, 59, 59, 0.18);
+  border-color: rgba(199, 59, 59, 0.5);
 }
 
 .welcome-description,
@@ -847,6 +876,41 @@ textarea:focus {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.results-layout {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.results-layout .final-result-card {
+  grid-column: 1 / -1;
+  background: var(--button-bg);
+  border-color: transparent;
+}
+
+.results-layout .final-result-card h3,
+.results-layout .final-result-card .metric-chip,
+.results-layout .final-result-card .metric-chip b {
+  color: #fff;
+}
+
+.results-layout .final-result-card .metric-chip {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.36);
+}
+
+.results-layout .final-result-card .metric-chip.concentration-safe {
+  background: rgba(31, 138, 84, 0.35);
+}
+
+.results-layout .final-result-card .metric-chip.concentration-warn {
+  background: rgba(211, 138, 31, 0.4);
+}
+
+.results-layout .final-result-card .metric-chip.concentration-danger {
+  background: rgba(199, 59, 59, 0.42);
+}
+
 #incoming-concentrations {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
@@ -856,6 +920,7 @@ textarea:focus {
   .purges-grid,
   .purge-inline-grid,
   .purge-options-grid,
+  .results-layout,
   .state-grid,
   .grid-3,
   .result-grid,
@@ -2163,12 +2228,18 @@ function renderOperationalSummary(results) {
   const mixVolume = state.initialVolume + getIncomingVolume();
   const mixHeight = mixVolume * (166.66 / 10);
   const finalHeight = result.finalVolume * (166.66 / 10);
+  const concentrationTone = getFinalConcentrationTone(result.item.key, result.finalConcentration);
 
-  return [
-    renderOperationalCard('Estado inicial', initialHeight, state.initialVolume, state.initialConcentrations[result.item.key] || 0, elementLabel),
-    renderOperationalCard('Mezcla (+Efluente)', mixHeight, mixVolume, result.afterIncomingConcentration, elementLabel),
-    renderOperationalCard('Estado final (Purga + Efluente)', finalHeight, result.finalVolume, result.finalConcentration, elementLabel),
-  ].join('');
+  return `
+    <div class="results-layout">
+      ${renderOperationalCard('Estado inicial', initialHeight, state.initialVolume, state.initialConcentrations[result.item.key] || 0, elementLabel)}
+      ${renderOperationalCard('Mezcla (+Efluente)', mixHeight, mixVolume, result.afterIncomingConcentration, elementLabel)}
+      ${renderOperationalCard('Estado final (Purga + Efluente)', finalHeight, result.finalVolume, result.finalConcentration, elementLabel, {
+        highlight: true,
+        concentrationTone,
+      })}
+    </div>
+  `;
 }
 
 function getCurrentSummaryData() {
@@ -2326,14 +2397,16 @@ function evaluateStatus(finalConcentration, warningLimit, operativeLimit) {
   return { label: 'OK', tone: 'ok' };
 }
 
-function renderOperationalCard(title, height, volume, concentration, elementLabel) {
+function renderOperationalCard(title, height, volume, concentration, elementLabel, options = {}) {
+  const cardClass = options.highlight ? 'card final-result-card' : 'card';
+  const concentrationChipTone = options.concentrationTone || 'info';
   return `
-    <article class="card">
+    <article class="${cardClass}">
       <h3>${title}</h3>
       <div class="metric-chips result-triple-grid">
         ${metricChip('Altura (mm)', formatHeight(height))}
         ${metricChip('Volumen (m³)', formatVolume(volume))}
-        ${metricChip(`Concentración (${elementLabel} mg/L)`, formatConcentration(concentration))}
+        ${metricChip(`Concentración (${elementLabel} mg/L)`, formatConcentration(concentration), concentrationChipTone)}
       </div>
     </article>
   `;
@@ -2345,6 +2418,16 @@ function readonlyOutput(label, value) {
 
 function metricChip(label, value, tone = 'info') {
   return `<div class="metric-chip ${tone}">${label}<b>${value}</b></div>`;
+}
+
+function getFinalConcentrationTone(elementKey, finalConcentration) {
+  if (finalConcentration === null) return 'info';
+  const limit = state.settings.limits[elementKey];
+  if (typeof limit !== 'number' || limit <= 0) return 'info';
+  const ratio = finalConcentration / limit;
+  if (ratio < 0.5) return 'concentration-safe';
+  if (ratio <= 0.8) return 'concentration-warn';
+  return 'concentration-danger';
 }
 
 function validateState() {
