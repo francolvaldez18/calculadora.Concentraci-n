@@ -1798,9 +1798,6 @@ function renderModeButtons() {
       elements.incomingVolume.value = '1';
     }
   }
-  if (elements.incomingContaminant) {
-    elements.incomingContaminant.disabled = state.calculationMode === 'ibc';
-  }
 }
 
 function renderTaskErrors() {
@@ -2308,9 +2305,7 @@ function readonlyOutput(label, value) {
 }
 
 function metricChip(label, value, tone = 'info') {
-  const color = getElementPastelColor(label);
-  const style = color ? ` style="background:${color};"` : '';
-  return `<div class="metric-chip ${tone}"${style}>${label}<b>${value}</b></div>`;
+  return `<div class="metric-chip ${tone}">${label}<b>${value}</b></div>`;
 }
 
 function validateState() {
@@ -2329,28 +2324,6 @@ function validateState() {
     messages.push({ type: 'error', text: 'El volumen final total es 0. La concentración no puede calcularse.' });
   }
   return messages;
-}
-
-const ELEMENT_PASTEL_COLORS = {
-  Ba: '#cfe2ff',
-  Al: '#e2e3e5',
-  P: '#fff3cd',
-  Fe: '#f8d7da',
-  Ni: '#d1ecf1',
-  Cu: '#d4edda',
-  Zn: '#e7e1ff',
-  Pb: '#dee2e6',
-  Cr: '#ffe5d9',
-  Mn: '#f5e6cc',
-  Co: '#e2d9f3',
-  B: '#e6fffa',
-  Cd: '#f8d7da',
-};
-
-function getElementPastelColor(label) {
-  const match = String(label).match(/\(([A-Za-z]+)\s+mg\/L\)/);
-  const elementKey = match ? match[1] : null;
-  return elementKey ? ELEMENT_PASTEL_COLORS[elementKey] : null;
 }
 
 function getIncomingVolume() {
